@@ -1,0 +1,19 @@
+# trivial gitignore file
+dist/
+.cabal-sandbox/
+cabal.sandbox.config
+.hpc/
+*.hi
+*.o
+*.p_hi
+*.prof
+*.tix
+
+# editor temp files
+
+*#
+.#*
+*~
+.*.swp
+
+
