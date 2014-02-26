@@ -4,6 +4,7 @@ import Haste.App
 import qualified Haste.App.Concurrent as H
 import qualified Control.Concurrent as C
 import qualified Data.Set as S
+import Data.List (lookup)
 import Control.Applicative
 import Control.Monad
 import Data.IORef
@@ -11,20 +12,20 @@ import Haste.Serialize
 import Haste.JSON
 import Haste.Graphics.Canvas
 
-type State = (IORef [(SessionID, C.MVar PlayerAction)], IORef GameState)
+type State = (IORef [(SessionID, C.MVar GameState)], IORef GameState)
 
 data PlayerAction = Pause
                   | TurnLeft
                   | TurnRight
                   | Fire
                   | Afterburner
-                  deriving (Eq, Show, Enum)
+                  deriving (Eq, Show, Enum, Read)
 
 instance Serialize PlayerAction where
   toJSON act = Dict [("player_action", toJSON $ show act)]
   parseJSON obj = do
     act <- obj .: "player_action"
-    return act
+    return $ read act
 
 data GameState = GameState {
   gsPaused       :: Bool
@@ -40,13 +41,20 @@ instance Serialize GameState where
 
 data API = API {
   apiHello       :: Export (Server GameState),
-  apiCommand     :: Export (PlayerAction -> Server ())
+  apiCommand     :: Export (PlayerAction -> Server ()),
+  apiState       :: Export (Server GameState),
+  apiAwait       :: Export (Server GameState)
 --  apiPause       :: Export (Server [Message]),
 --  apiTurnRight   :: Export (String -> String -> Server ()),
 --  apiTurnLeft    :: Export (Server Message),
 --  apiFire        :: Export (Server Message),
 --  apiAfterburner :: Export (Server Message)
   }
+
+getState :: Useless State -> Server GameState
+getState state = do
+  (clients, gameState) <- mkUseful state
+  liftIO $ readIORef gameState
 
 hello :: Useless State -> Server GameState
 hello state = do
@@ -64,21 +72,41 @@ command state act = do
   (clients, gameState) <- mkUseful state
   liftIO $ do
     cs <- readIORef clients
-    atomicModifyIORef gameState $ \_ -> (GameState True, ())
+    st <- readIORef gameState
+    atomicModifyIORef gameState $ \_ -> (st{gsPaused=(not $ gsPaused st)}, ())
     newState <- readIORef gameState
-    forM_ cs $ \(_, v) -> C.forkIO $ C.putMVar v act
+    forM_ cs $ \(_, v) -> C.forkIO $ C.putMVar v newState
+
+await :: Useless State -> Server GameState
+await state = do
+  sid <- getSessionID
+  (clients, gameState) <- mkUseful state
+  liftIO $ readIORef gameState >>= \st -> return st
+--  liftIO $ readIORef clients >>= maybe (gameState) C.takeMVar . lookup sid
     
 clientMain :: API -> Client ()
 clientMain api = withElems ["sceneCanvas", "hudCanvas"] $ \[cSceneElem, cHudElem] -> do
   state <- onServer $ apiHello api
   Just cScene <- getCanvas cSceneElem
+
+  H.fork $ let awaitLoop st = do
+                 renderScene st cScene
+                 st' <- onServer $ apiAwait api
+                 setTimeout 20 $ awaitLoop st'
+           in awaitLoop state
+{-
   cSceneElem `onEvent` OnKeyDown $ \k -> do
     case k of
       13 -> do
-        onServer $ apiCommand api <.> Pause
+        alert "Clicked!"
+        --onServer $ apiCommand api <.> Pause
       _  -> return ()
+-}
 
-  renderScene state cScene
+  cSceneElem `onEvent` OnClick $ \_ _ -> do
+--    alert "Clicked!"
+    onServer $ apiCommand api <.> Pause
+
   return ()
 
 renderScene :: GameState -> Canvas -> Client ()
@@ -98,38 +126,10 @@ main = do
       gameState <- newIORef $ GameState False
       return (clients, gameState)
 
-    api <- API <$> export (hello state)
-               <*> export (command state)
+    api <- API
+           <$> export (hello state)
+           <*> export (command state)
+           <*> export (getState state)
+           <*> export (await state)
 
     runClient $ clientMain api
-{-
-data AppState = AppState{ isPaused :: Bool }
-instance Serialize AppState where
-  toJSON AppState{..} = Dict [("isPaused", toJSON isPaused)]
-  parseJSON obj = do
-    isPaused <- obj .: "isPaused"
-    return $ AppState isPaused
-
-main :: IO ()
-main = do
-  runApp (defaultConfig "ws://localhost:24601" 24601) $ do
-    state <- liftServerIO $ C.newMVar $ AppState False
-
-    getState <-export $ \_ -> do
-      state <- mkUseful state
-      liftIO $ do oldState <- C.takeMVar state
-                  return oldState
-
-    trade <- export $ \newState -> do
-      state <- mkUseful state
-      liftIO $ do oldState <- C.takeMVar state
-                  C.putMVar state newState
-                  return oldState
-
-    runClient $ withElem "sceneCanvas" $ \sc -> do
-      sc `onEvent` OnClick $ \_ _ -> do
-        oldState' <- onServer $ getState <.> ()
-        let newState = AppState False --(not $ isPaused oldState')
-        oldState <- onServer $ trade <.> newState
-        alert $ "The old state was: " ++ (show $ isPaused oldState)
--}
