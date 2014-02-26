@@ -12,13 +12,19 @@ import Haste.Serialize
 import Haste.JSON
 import Haste.Graphics.Canvas
 
+import Keys.KeyCodes
+
 type State = (IORef [(SessionID, C.MVar GameState)], IORef GameState)
 
 data PlayerAction = Pause
-                  | TurnLeft
-                  | TurnRight
-                  | Fire
-                  | Afterburner
+                  | StartTurnLeft
+                  | StopTurnLeft
+                  | StartTurnRight
+                  | StopTurnRight
+                  | StartFire
+                  | StopFire
+                  | StartAfterburner
+                  | StopAfterburner
                   deriving (Eq, Show, Enum, Read)
 
 instance Serialize PlayerAction where
@@ -73,7 +79,12 @@ command state act = do
   liftIO $ do
     cs <- readIORef clients
     st <- readIORef gameState
-    atomicModifyIORef gameState $ \_ -> (st{gsPaused=(not $ gsPaused st)}, ())
+    let st' = case act of
+          Pause -> st{gsPaused=(not $ gsPaused st)}
+          StartAfterburner -> st
+          _ -> st
+
+    atomicModifyIORef gameState $ \_ -> (st', ())
     newState <- readIORef gameState
     forM_ cs $ \(_, v) -> C.forkIO $ C.putMVar v newState
 
@@ -94,18 +105,20 @@ clientMain api = withElems ["sceneCanvas", "hudCanvas"] $ \[cSceneElem, cHudElem
                  st' <- onServer $ apiAwait api
                  setTimeout 20 $ awaitLoop st'
            in awaitLoop state
-{-
-  cSceneElem `onEvent` OnKeyDown $ \k -> do
-    case k of
-      13 -> do
-        alert "Clicked!"
-        --onServer $ apiCommand api <.> Pause
-      _  -> return ()
--}
 
-  cSceneElem `onEvent` OnClick $ \_ _ -> do
---    alert "Clicked!"
-    onServer $ apiCommand api <.> Pause
+  cSceneElem `onEvent` OnKeyDown $ \k -> do
+    case fromKeyCode k of
+      KeyP -> do
+        onServer $ apiCommand api <.> Pause
+      UpArrow -> do
+        onServer $ apiCommand api <.> StartAfterburner
+      LeftArrow -> do
+        onServer $ apiCommand api <.> StartTurnLeft
+      RightArrow -> do
+        onServer $ apiCommand api <.> StartTurnRight
+      Space -> do
+        onServer $ apiCommand api <.> StartFire
+      _  -> return ()
 
   return ()
 

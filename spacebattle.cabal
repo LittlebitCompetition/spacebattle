@@ -17,7 +17,7 @@ cabal-version:       >=1.10
 
 executable spacebattle
   main-is:             Game.hs
-  -- other-modules:       
+  other-modules:       Keys.KeyCodes
   -- other-extensions:    
   build-depends:       base >=4.6 && <4.7
                       ,haste-compiler >=0.3 && <0.4
