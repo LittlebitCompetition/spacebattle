@@ -4,7 +4,11 @@ module Main where
 import Haste
 import Haste.Graphics.Canvas
 import Data.IORef
+import FRP.Netwire
+import Prelude hiding ((.), id)
 --import Linear
+myWire :: (Monad m, Num b) => Wire s e m a b
+myWire = liftA2 (+) (pure 15) (pure 17)
 
 data V2 a = V2 a a
 
