@@ -16,6 +16,35 @@ import Keys.KeyCodes
 
 type State = (IORef [(SessionID, C.MVar GameState)], IORef GameState)
 
+type V2 = (Double,Double)
+
+data Player = Player{ playerName  :: String
+                    , playerDies  :: Int
+                    , playerKills :: Int
+                    , playerPos   :: V2
+                    , playerDir   :: V2
+                    , playerVel   :: V2
+                    }
+            deriving (Eq, Show, Read)
+instance Serialize Player where
+  toJSON p = Dict [("playerName",  toJSON $ playerName  p)
+                  ,("playerDies",  toJSON $ playerDies  p)
+                  ,("playerKills", toJSON $ playerKills p)
+                  ,("playerPos",   toJSON $ playerPos   p)
+                  ,("playerDir",   toJSON $ playerDir   p)
+                  ,("playerVel",   toJSON $ playerVel   p)]
+  parseJSON obj = do
+    n   <- obj .: "playerName"
+    ds  <- obj .: "playerDies"
+    ks  <- obj .: "playerKills"
+    pos <- obj .: "playerPos"
+    dir <- obj .: "playerDir"
+    vel <- obj .: "playerVel"
+    return $ Player n ds ks pos dir vel
+
+defaultPlayer = Player "noName" 0 0 (0,0) (0,0) (0,0)
+--defaultPlayer = Player "noName" 0 0 0 0 0
+
 data PlayerAction = Pause
                   | StartTurnLeft
                   | StopTurnLeft
@@ -33,15 +62,17 @@ instance Serialize PlayerAction where
     act <- obj .: "player_action"
     return $ read act
 
-data GameState = GameState {
-  gsPaused       :: Bool
-  }
+data GameState = GameState { gsPaused       :: Bool
+                           , players        :: [Player]
+                           }
+                 deriving (Eq, Show)
 
 instance Serialize GameState where
-  toJSON GameState{..} = Dict [("gsPaused", toJSON gsPaused)]
+  toJSON GameState{..} = Dict [("gsPaused", toJSON gsPaused),("players", Arr $ map toJSON players)]
   parseJSON obj = do
     gsPaused <- obj .: "gsPaused"
-    return $ GameState gsPaused
+    players <- obj .: "players"
+    return $ GameState gsPaused players
 
 --type GameState = (Bool)
 
@@ -50,11 +81,6 @@ data API = API {
   apiCommand     :: Export (PlayerAction -> Server ()),
   apiState       :: Export (Server GameState),
   apiAwait       :: Export (Server GameState)
---  apiPause       :: Export (Server [Message]),
---  apiTurnRight   :: Export (String -> String -> Server ()),
---  apiTurnLeft    :: Export (Server Message),
---  apiFire        :: Export (Server Message),
---  apiAfterburner :: Export (Server Message)
   }
 
 getState :: Useless State -> Server GameState
@@ -71,6 +97,9 @@ hello state = do
     v <- C.newEmptyMVar
     atomicModifyIORef clients $ \cs ->
       ((sid, v) : filter (\(sess, _) -> sess `S.member` active) cs, ())
+    atomicModifyIORef gameState $ \st ->
+      let newPlayers = (defaultPlayer{playerName = show sid}) : (players st)
+      in (st{players=newPlayers}, ())
     readIORef gameState
 
 command :: Useless State -> PlayerAction -> Server ()
@@ -136,7 +165,7 @@ main = do
   runApp (defaultConfig "ws://localhost:3712" 3712) $ do
     state <- liftServerIO $ do
       clients <- newIORef []
-      gameState <- newIORef $ GameState False
+      gameState <- newIORef $ GameState False []
       return (clients, gameState)
 
     api <- API
