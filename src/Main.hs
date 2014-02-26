@@ -4,11 +4,54 @@ module Main where
 import Haste
 import Haste.Graphics.Canvas
 import Data.IORef
+--import Linear
+
+data V2 a = V2 a a
 
 data State
   = State {isPaused :: Bool
           ,frame    :: Int
           }
+
+class RigidBody a where
+  bounds :: a -> BodyBound
+  mass   :: a -> BodyMass
+
+type Position = V2 Double
+type Velocity = V2 Double
+
+data Ship
+  = Ship{ shipPos :: Position
+        , shipVel :: Velocity
+        , shipShape :: [Point]
+        }
+instance Renderable Ship where
+  toPicture (Ship p v sh) = stroke . path $ rescale 20 sh
+
+rescale :: Double -> [Point] -> [Point]
+rescale sf ps = map (\(x,y) -> (x*sf,y*sf)) ps
+
+ship1 = Ship{ shipPos   = V2 0 0
+            , shipVel   = V2 0 0
+            , shipShape = [ ( 0.00, 0.50)
+                          , (-0.25,-0.50)
+                          , ( 0.25,-0.50)
+                          , ( 0.00, 0.50)]
+            }
+
+data Bullet
+  = Bullet{ bulletPos :: Position
+          , bulletVel :: Velocity
+          }
+
+data BodyBound
+  = BoundSphere Double
+  | BoundBox Double Double
+
+type BodyMass = Double
+
+class Renderable a where
+  toPicture :: a -> Picture ()
 
 singularity :: Picture ()
 singularity = fill $ circle (0,0) 20
@@ -50,8 +93,10 @@ drawScene sc hud st@State{..} = do
         sy = 100 * (sin $ (fromIntegral frame) / 100)
     color black $ fill $ rect (0,0) (800,600)
     color green $ translate (sx,300+sy) $ singularity
+    color yellow $ translate (400,300) $ toPicture ship1
   drawHud hud st
 
 white = RGBA 255 255 255 1.0
 black = RGBA   0   0   0 1.0
 green = RGBA   0 255   0 1.0
+yellow = RGBA 255 255  0 1.0

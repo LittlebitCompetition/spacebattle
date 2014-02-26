@@ -21,5 +21,6 @@ executable spacebattle
   -- other-extensions:    
   build-depends:       base >=4.6 && <4.7
                       ,haste-compiler >=0.3 && <0.4
+                      ,linear >=1.6 && <1.7
   hs-source-dirs:      src
   default-language:    Haskell2010
