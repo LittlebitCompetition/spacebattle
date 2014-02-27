@@ -12,47 +12,8 @@ var bullets_max = 300;
 var stars_max = 20;
 var max_vel = 7;
 var bullet_life = 300;
+var gravity_affect2bullet = false;
 
-function setSize(w,h){
-	if ( typeof h === "undefined" ) H = window.innerHeight - 20;
-	else H = h;
-	if ( typeof h === "undefined" ) W = window.innerWidth - 20;
-	else W = w;
-
-	ctx.canvas.width  = W;
-	ctx.canvas.height = H;
-
-	stars = [];
-	for(var i = 0; i < stars_max; i++) {
-		stars.push(new create_star());
-	}
-}
-setSize();
-
-
-window.requestAnimFrame = (function(){
-	return  window.requestAnimationFrame	|| 
-		window.webkitRequestAnimationFrame	|| 
-		window.mozRequestAnimationFrame		|| 
-		window.oRequestAnimationFrame		|| 
-		window.msRequestAnimationFrame		|| 
-		function(callback, element){
-			window.setTimeout(callback, 1000 / 60);
-		};
-})();
-
-
-window.onresize = setSize;
-
-
-function rotate(x, y, xm, ym, a) {
-    var cos = Math.cos, sin = Math.sin,
-    a = a * Math.PI / 180,
-    xr = (x - xm) * cos(a) - (y - ym) * sin(a)   + xm,
-    yr = (x - xm) * sin(a) + (y - ym) * cos(a)   + ym;
-
-    return [xr, yr];
-}
 
 //rotate(200,200,0,0,-1); // 0,400
 
@@ -78,106 +39,52 @@ var ship = [
 ];
 
 
-function create_star(){
-	this.x = Math.random()*W;
-	this.y = Math.random()*H;
-
-//	this.vx = Math.random()*20;
-	this.vx = Math.random()*-.3-.1;
-	this.vy = 0;
-	
-	var wcol = Math.random()*100+50>>0;
-	var r = wcol+Math.random()*50>>0;
-	var g = wcol+Math.random()*50>>0;;
-	var b = wcol+Math.random()*50>>0;
-	this.color = "rgb("+r+", "+g+", "+b+")";
-	
-	this.radius = Math.random()*2+1;
-}
-
-
-function _cos(a){return Math.cos(a*Math.atan(1)/45);}
-function _sin(a){return Math.sin(a*Math.atan(1)/45);}
 var tick = 0;
 function draw(){
-	ctx.drawImage(background,0,0);
-//	ctx.globalCompositeOperation = "source-over";
-//	ctx.fillStyle = "rgba(0, 0, 0, 0.003)";
-//	ctx.fillRect(0, 0, W, H);
-//	ctx.globalCompositeOperation = "lighter";
+	ctx.drawImage(background,0,0,W,H);
 
 	draw_stars();
-	draw_bullet();
-	draw_text();
+
 	draw_energy();
+	logic_energy();
+
+	Bullet.draw_all();
+	logic_bullet();
+
 	draw_ship();
-//	ctx.fillStyle = "#000";
+	logic_ship();
+
+	draw_text();
 	keyboard_set()
 
-	//if (keys[40])		// down
 
 	tick++;
 }
 //draw();
 //setInterval(draw, 20);
 
-function draw_energy(){
-	var r = Math.random()*2 + 10;
-	ctx.fillStyle = "#0ff";
-	ctx.beginPath();
-
-//	var gradient = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, 12);
-//	gradient.addColorStop(0, "#00f");
-//	gradient.addColorStop(0.4, "#0ff");
-//	gradient.addColorStop(0.4, "#fff");
-//	gradient.addColorStop(1, "black");
-	
-	
-	ctx.arc(W/2, H/2, r, Math.PI*2, false);
-	ctx.closePath();
-	ctx.fill();
+function reloading(){
+	var r = 0.5;
+	if (sh.f > 50) r = 0.25;
+	if (sh.f < 10) r = 1;
+	sh.f+= r;
 }
+setInterval(reloading, 250);
 
-function keyboard_set(){
-	if (keys[38]) { 			//up
-		sh.vx+=_cos(sh.a)/sh.acc;
-		sh.vy+=_sin(sh.a)/sh.acc;
-
-		if ( sh.vx > max_vel ) sh.vx = max_vel;
-		if ( sh.vx < -max_vel ) sh.vx = -max_vel;
-		if ( sh.vy > max_vel ) sh.vy = max_vel;
-		if ( sh.vy < -max_vel ) sh.vy = -max_vel;
-	}
-	if (keys[37]) sh.a-=3;		// left
-	if (keys[39]) sh.a+=3;		// right
-	if (keys[32]){				// space
-		if (Bullet.all.length < bullets_max) {
-			if(sh.f >= 1){
-				var r=1;
-				if (sh.f > 50 && sh.f < 150) r = 2;
-				if (sh.f > 150) r = 3;
-				var bullet = new Bullet(sh.x, sh.y, r);
-				var random_offset = Math.random() * 2;
-	//			var speed = Math.random() * 15 + 3;
-				var speed = 8;
-				bullet.vx = speed * _cos(sh.a + random_offset) + sh.vx;
-				bullet.vy = speed * _sin(sh.a + random_offset) + sh.vy;
-				sh.vx += speed * -_cos(sh.a) / 500 * r; // Отдача от выстрела
-				sh.vy += speed * -_sin(sh.a) / 500 * r; // Отдача от выстрела
-				
-				if ( sh.vx > max_vel ) sh.vx = max_vel;
-				if ( sh.vx < -max_vel ) sh.vx = -max_vel;
-				if ( sh.vy > max_vel ) sh.vy = max_vel;
-				if ( sh.vy < -max_vel ) sh.vy = -max_vel;
-				
-				sh.f--;
-			} else {
-				// Sound empty charge
-			}
-		}
-	}
+function getFPS(){
+	fps = tick;
+	tick = 0;
 }
+setInterval(getFPS,1000);
 
+
+function draw_debug(text){
+	ctx.font = "bold 12px sans-serif";
+	ctx.textAlign = "left";
+	ctx.textBaseline = "bottom";
+	ctx.fillStyle = "red";
+	ctx.fillText('DEBUG: '+text, 10,H-10 );
+}
 
 function draw_text(){
 	ctx.font = "bold 12px sans-serif";
@@ -188,6 +95,53 @@ function draw_text(){
 	ctx.fillText('b:'+Bullet.all.length+'; fps:'+fps+';  key:'+_key+';  x:'+sh.vx.toFixed(2)+', y:'+sh.vy.toFixed(2),W-10,H-10 );
 
 }
+
+function draw_energy(){
+	var r = Math.random()*2 + 10;
+	ctx.fillStyle = "#0ff";
+	ctx.beginPath();
+	var ex = W/2;
+	var ey = H/2;
+	ctx.arc(ex, ey, r, Math.PI*2, false);
+	ctx.closePath();
+	ctx.fill();
+}
+
+function logic_energy(){
+	var ex = W/2;
+	var ey = H/2;
+
+	var dx = ex - sh.x;
+	var dy = ey - sh.y
+	
+	var dist = Math.sqrt( dx*dx + dy*dy );
+	var ea = Math.atan2(dy,dx) * 180 / Math.PI;
+
+	if ( dist < 5 ) dist = 5;
+
+	sh.vx+=_cos(ea)/dist;
+	sh.vy+=_sin(ea)/dist;
+
+	if ( dist < 30 && dist > 10) sh.f += 0.1;
+	if ( dist < 10 ) sh.f += 0.5;
+
+
+
+	// Работает, но не очень нужно
+	if ( gravity_affect2bullet ){
+		var i = Bullet.all.length;
+		while(i--) {
+			var b = Bullet.all[i];
+			var bdx = ex - b.x;
+			var bdy = ey - b.y;
+			var bdist = Math.sqrt(bdx*bdx+bdy*bdy);
+			var bea = Math.atan2(bdy,bdx)*180/Math.PI;
+			b.vx+=_cos(bea)/bdist*10;
+			b.vy+=_sin(bea)/bdist*10;
+		}
+	}
+}
+
 
 function draw_ship(){
 	// draw ship
@@ -216,16 +170,23 @@ function draw_ship(){
 	ctx.closePath();
 	ctx.fill();
 	ctx.stroke();
+}
 
-
+function logic_ship(){
 	sh.x += sh.vx;
 	sh.y += sh.vy;
+
+	if ( sh.vx > max_vel ) sh.vx = max_vel;
+	if ( sh.vx < -max_vel ) sh.vx = -max_vel;
+	if ( sh.vy > max_vel ) sh.vy = max_vel;
+	if ( sh.vy < -max_vel ) sh.vy = -max_vel;
+
+	if ( sh.f > bullets_max) sh.f = bullets_max;
 
 	if ( sh.x > W ) sh.x = 0;
 	if ( sh.x < 0 ) sh.x = W;
 	if ( sh.y > H ) sh.y = 0;
 	if ( sh.y < 0 ) sh.y = H;
-
 }
 
 function draw_stars(){
@@ -233,11 +194,6 @@ function draw_stars(){
 	{
 		var p = stars[t];
 		ctx.beginPath();
-//		var gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
-//		gradient.addColorStop(0, p.color);
-//		gradient.addColorStop(0.4, p.color);
-//		gradient.addColorStop(0.4, p.color);
-//		gradient.addColorStop(1, "black");
 	
 		ctx.fillStyle = p.color;
 		ctx.beginPath();
@@ -256,66 +212,26 @@ function draw_stars(){
 }
 
 
-function reloading(){
-	var r = 0.5;
-	if (sh.f > 50) r = 0.25;
-	if (sh.f < 10) r = 1;
-	sh.f+= r;
-	if ( sh.f > bullets_max ) sh.f = bullets_max;
-}
-setInterval(reloading, 250);
 
 
 
-function getFPS(){
-	fps = tick;
-	tick = 0;
-}
-setInterval(getFPS,1000);
 
-var keys=[];
-window.addEventListener("keydown", function (e) {
-    keys[e.keyCode] = true;
-
-	if ( e.keyCode == '77' ) setSize (800, 600);
-	if ( e.keyCode == '72' ) setSize ();
-	if ( e.keyCode == '82' ) sh.f = 300;
-	_key = e.keyCode;
-//	alert(e.keyCode);
-});
-window.addEventListener("keyup", function (e) {
-    keys[e.keyCode] = false;
-});
-
-
-function draw_bullet(){
+function logic_bullet(){
 	var i = Bullet.all.length;
 	while(i--) {
 		var bullet = Bullet.all[i];
 		bullet.x += bullet.vx;
 		bullet.y += bullet.vy;
-//		bullet.vy += .1;
-//		bullet.vx *= .999;
-//		bullet.vy *= .99;
+
 		if (bullet.x > W) bullet.x = 0;
 		if (bullet.x < 0) bullet.x = W;
-//		bullet.remove();
-
-//		else if (bullet.y >= canvas.height) {
 		if (bullet.y > H) bullet.y = 0;
 		if (bullet.y < 0) bullet.y = H;
 
-
 		if (bullet.t <= 0) bullet.remove();
 		else bullet.t--;
-//			bullet.vy = -Math.abs(bullet.vy);
-//			bullet.vy *= .7;
-//			if (Math.abs(bullet.vy) < 1 && Math.abs(bullet.vx) < 1) {
-//			bullet.remove();
-//			}
 	
 	}
-	Bullet.draw_all();
 }
 
 function Bullet(x, y, r) {
@@ -357,25 +273,138 @@ Bullet.prototype = {
 	}
 };
 
-/*
-$(document).keydown(function(e){
-	var key = e.which;
-	if(key == "38") {
+function create_star(){
+	this.x = Math.random()*W;
+	this.y = Math.random()*H;
 
-//		alert(_cos(sh.a)+' '+_sin(sh.a));
-	} // up
+//	this.vx = Math.random()*20;
+	this.vx = Math.random()*-.3-.1;
+	this.vy = 0;
+	
+	var wcol = Math.random()*100+50>>0;
+	var r = wcol+Math.random()*50>>0;
+	var g = wcol+Math.random()*50>>0;;
+	var b = wcol+Math.random()*50>>0;
+	this.color = "rgb("+r+", "+g+", "+b+")";
+	
+	this.radius = Math.random()*2+1;
+}
 
-	if(key == "37") sh.a-=5; //left
-	if(key == "39") sh.a+=5; //right
 
-//	if(key == "40") {;} //down
+function _cos(a){return Math.cos(a*Math.atan(1)/45);}
+function _sin(a){return Math.sin(a*Math.atan(1)/45);}
 
-	if (sh.a >= 360) sh.a = 0;
-	if (sh.a < 0 ) sh.a = 359;
 
+function setSize(w,h){
+	if ( typeof h === "undefined" ) H = window.innerHeight - 20;
+	else H = h;
+	if ( typeof h === "undefined" ) W = window.innerWidth - 20;
+	else W = w;
+
+	ctx.canvas.width  = W;
+	ctx.canvas.height = H;
+
+	stars = [];
+	for(var i = 0; i < stars_max; i++) {
+		stars.push(new create_star());
+	}
+}
+setSize();
+window.onresize = setSize;
+
+function rotate(x, y, xm, ym, a) {
+    var cos = Math.cos, sin = Math.sin,
+    a = a * Math.PI / 180,
+    xr = (x - xm) * cos(a) - (y - ym) * sin(a)   + xm,
+    yr = (x - xm) * sin(a) + (y - ym) * cos(a)   + ym;
+
+    return [xr, yr];
+}
+
+function keyboard_set(){
+	if (keys[38]) { 			//up
+		sh.vx+=_cos(sh.a)/sh.acc;
+		sh.vy+=_sin(sh.a)/sh.acc;
+
+		if ( sh.vx > max_vel ) sh.vx = max_vel;
+		if ( sh.vx < -max_vel ) sh.vx = -max_vel;
+		if ( sh.vy > max_vel ) sh.vy = max_vel;
+		if ( sh.vy < -max_vel ) sh.vy = -max_vel;
+	}
+	if (keys[37]) sh.a-=3;		// left
+	if (keys[39]) sh.a+=3;		// right
+	if (keys[32]){				// space
+		if (Bullet.all.length < bullets_max) {
+			if(sh.f >= 1){
+				var r=1;
+				if (sh.f > 50 && sh.f < 150) r = 2;
+				if (sh.f > 150) r = 3;
+				var bullet = new Bullet(sh.x, sh.y, r);
+				var random_offset = Math.random() * 2;
+	//			var speed = Math.random() * 15 + 3;
+				var speed = 8;
+				bullet.vx = speed * _cos(sh.a + random_offset) + sh.vx;
+				bullet.vy = speed * _sin(sh.a + random_offset) + sh.vy;
+				sh.vx += speed * -_cos(sh.a) / 500 * r; // Отдача от выстрела
+				sh.vy += speed * -_sin(sh.a) / 500 * r; // Отдача от выстрела
+				
+				if ( sh.vx > max_vel ) sh.vx = max_vel;
+				if ( sh.vx < -max_vel ) sh.vx = -max_vel;
+				if ( sh.vy > max_vel ) sh.vy = max_vel;
+				if ( sh.vy < -max_vel ) sh.vy = -max_vel;
+				
+				sh.f--;
+			} else {
+				// Sound empty charge
+			}
+		}
+	}
+	if ( keys[67]) {sh.x = mousePos.x; sh.y = mousePos.y;} // "c"
+	if ( keys[83]) {sh.vx = 0; sh.vy = 0;} // "s"
+}
+
+
+var keys=[];
+window.addEventListener("keydown", function (e) {
+    keys[e.keyCode] = true;
+
+	if ( e.keyCode == '77' ) setSize (800, 600);
+	if ( e.keyCode == '72' ) setSize ();
+	if ( e.keyCode == '82' ) sh.f = 300;
+	_key = e.keyCode;
+//	alert(e.keyCode);
 });
-*/
+window.addEventListener("keyup", function (e) {
+    keys[e.keyCode] = false;
+});
 
+
+
+function getMousePos(canvas, evt) {
+	var rect = canvas.getBoundingClientRect();
+	return {
+		x: evt.clientX - rect.left,
+		y: evt.clientY - rect.top
+	};
+}
+var mousePos;
+canvas.addEventListener('mousemove', function(evt) {
+	mousePos = getMousePos(canvas, evt);
+}, false);
+
+
+
+
+window.requestAnimFrame = (function(){
+	return  window.requestAnimationFrame	|| 
+		window.webkitRequestAnimationFrame	|| 
+		window.mozRequestAnimationFrame		|| 
+		window.oRequestAnimationFrame		|| 
+		window.msRequestAnimationFrame		|| 
+		function(callback, element){
+			window.setTimeout(callback, 1000 / 60);
+		};
+})();
 
 
 (function animloop(){
