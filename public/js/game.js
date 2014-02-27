@@ -5,7 +5,9 @@ var renderer,		// Rendering context.
 	camera,			// Main camera.
 	scene,			// Main scene.
 	keyboard,		// Keyboard input.
-	localPlayer;	// Local player.
+	localPlayer,	// Local player.
+	remotePlayers,	// Enemies.
+	socket;			// Socket.io socket.
 
 var SCREEN_WIDTH,	// We use this to hold client window size.
 	SCREEN_HEIGHT;	// 
@@ -35,10 +37,29 @@ var init = function() {
 	// Initialise keyboard controls.
 	keyboard = new THREEx.KeyboardState(renderer.domElement);
 
-	localPlayer = new player(scene, 200, 200);
+	// Set players.
+	localPlayer = new player(scene, 200, 200);	
 
+	remotePlayers = [];
+
+	// Connecting to local server.
+	socket = io.connect("http://localhost", {port: 8000, transports: ["websocket"]});
+
+	setEventHandlers();
+};
+
+/**
+ *	Game event handler.
+ */
+var setEventHandlers = function() {
 	// Set window resize handler.
 	window.addEventListener("resize", onResize, false);
+
+	socket.on("connect", onSocketConnected);
+	socket.on("disconnect", onSocketDisconnect);
+	socket.on("new player", onNewPlayer);
+	socket.on("move player", onMovePlayer);
+	socket.on("remove player", onRemovePlayer);
 };
 
 /**
@@ -48,7 +69,58 @@ function onResize(e) {
 	// Maximise the screen size.
 	SCREEN_HEIGHT = window.innerHeight;
 	SCREEN_WIDTH  = window.innerWidth;
-}
+};
+
+function onSocketConnected() {
+	console.log("Connected to socket server.");
+	socket.emit("new player", {x: localPlayer.getX(), y: localPlayer.getY()});
+};
+
+function onSocketDisconnect() {
+	console.log("Disconnected from socket server");
+};
+
+function onNewPlayer(data) {
+	console.log("New player connected: " + data.id);
+	var newPlayer = new player(scene, data.x, data.y);
+	newPlayer.id = data.id;
+	remotePlayers.push(newPlayer);
+};
+
+function onMovePlayer(data) {
+	var movePlayer = playerById(data.id);
+
+	if (!movePlayer) {
+	    console.log("Player not found: " + data.id);
+	    return;
+	};
+
+	movePlayer.setX(data.x);
+	movePlayer.setY(data.y);
+};
+
+function onRemovePlayer(data) {
+	var removePlayer = playerById(data.id);
+
+	if (!removePlayer) {
+	    console.log("Player not found: " + data.id);
+	    return;
+	};
+
+	removePlayer.clear();
+
+	remotePlayers.splice(remotePlayers.indexOf(removePlayer), 1);
+};
+
+function playerById(id) {
+    var i;
+    for (i = 0; i < remotePlayers.length; i++) {
+        if (remotePlayers[i].id == id)
+            return remotePlayers[i];
+    };
+
+    return false;
+};
 
 /**
  *	Game animation loop.
@@ -58,13 +130,15 @@ var animate = function() {
 	render();
 
 	requestAnimationFrame(animate);
-}
+};
 
 /**
  *	Game update.
  */
 var update = function() {
-	localPlayer.update(keyboard);
+	if (localPlayer.update(keyboard)) {
+		socket.emit("move player", {x: localPlayer.getX(), y: localPlayer.getY()});
+	}
 };
 
 /**
