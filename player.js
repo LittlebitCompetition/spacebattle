@@ -1,10 +1,10 @@
 /**
  * Server player class.
  */
- var player = function(newId, startX, startY) {
+ var player = function(startX, startY) {
  	var x = startX,
  		y = startY,
- 		id = newId;
+ 		id;
 
  	var getX = function() {
  		return x;
@@ -22,16 +22,12 @@
  		y = newY
  	}; 	
 
- 	var getId = function() {
- 		return id;
- 	}
-
  	return {
  		getX: getX,
  		getY: getY,
  		setX: setX,
  		setY: setY,
- 		getId: getId
+ 		id: id
  	}
  };
 

@@ -60,14 +60,14 @@ function onClientDisconnect() {
 function onNewPlayer(data) {	
 	var newPlayer = new player(this.id, data.x, data.y);	
 
-	this.broadcast.emit("new player", {id: newPlayer.getId(), x: newPlayer.getX(),
+	this.broadcast.emit("new player", {id: newPlayer.id, x: newPlayer.getX(),
 		y: newPlayer.getY()});
 
 	var i, existingPlayer;
 
 	for (i = 0; i < players.length; i++) {
 		existingPlayer = players[i];
-		this.emit("new player", {id: existingPlayer.getId(), x: existingPlayer.getX(),
+		this.emit("new player", {id: existingPlayer.id, x: existingPlayer.getX(),
 			y: existingPlayer.getY()});
 	}
 
@@ -79,20 +79,20 @@ function onMovePlayer(data) {
 
 	if (!movePlayer) {
 		util.log("Player not found: " + this.id);
+		return;
 	}
 
 	movePlayer.setX(data.x);
 	movePlayer.setY(data.y);
 
-	this.broadcast.emit("move player", {id: movePlayer.getId(), x: movePlayer.getX(), 
+	this.broadcast.emit("move player", {id: movePlayer.id, x: movePlayer.getX(), 
 		y: movePlayer.getY()});
-	util.log("Player moved: " + movePlayer.getId());
 };
 
 function playerById(id) {
 	var i;
 	for (var i = 0; i < players.length; i++) {
-		if (players[i].getId() == id) {
+		if (players[i].id == id) {
 			return players[i];
 		}
 	};
