@@ -31,10 +31,12 @@ var player = function(scene, startX, startY) {
 
 	var setX = function(newX) {
 	    x = newX;
+	    model.position.x = newX;
 	};
 
 	var setY = function(newY) {
 	    y = newY;
+	    model.position.y = newY;
 	};
 
 	var clear = function() {
