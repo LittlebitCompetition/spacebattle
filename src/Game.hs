@@ -4,7 +4,7 @@ import Haste.App
 import qualified Haste.App.Concurrent as H
 import qualified Control.Concurrent as C
 import qualified Data.Set as S
-import Data.List (lookup)
+import Data.List (lookup, delete)
 import Control.Applicative
 import Control.Monad
 import Data.IORef
@@ -105,11 +105,18 @@ hello state = do
 command :: Useless State -> PlayerAction -> Server ()
 command state act = do
   (clients, gameState) <- mkUseful state
+  sid <- getSessionID
+  gs <- liftIO $ readIORef gameState
+  let player = head $ filter (\p -> (playerName p) == (show sid)) $ players gs
   liftIO $ do
     cs <- readIORef clients
     st <- readIORef gameState
     let st' = case act of
           Pause -> st{gsPaused=(not $ gsPaused st)}
+          StartTurnLeft -> let (a,b) = playerDir player
+                               newDir = (a+0.1,b+0.1)
+                               newPlayers = player{playerDir=newDir} : (delete player (players gs))
+                           in st{players=newPlayers} 
           StartAfterburner -> st
           _ -> st
 
@@ -152,10 +159,36 @@ clientMain api = withElems ["sceneCanvas", "hudCanvas"] $ \[cSceneElem, cHudElem
   return ()
 
 renderScene :: GameState -> Canvas -> Client ()
-renderScene gs sc = do
+renderScene gameState sc = do
   render sc $ do
     colorBlack $ fill $ rect (0,0) (800,600)
-    translate (100,100) $ colorWhite $ text (0,0) $ "gsPaused: " ++ (show $ gsPaused gs)
+    renderPlayers $ players gameState
+    translate (100,100) $ colorWhite $ text (0,0) $ "gsPaused: " ++ (show $ gsPaused gameState)
+
+shipShape = [ ( 0.00, 0.50)
+            , (-0.25,-0.50)
+            , ( 0.25,-0.50)
+            , ( 0.00, 0.50)]
+            
+renderPlayers :: [Player] -> Picture ()
+renderPlayers players = do
+  translate (400,300) $ rotate (dir2ang dir) $ colorWhite $ stroke $ path $ rescale 20 shipShape
+  where dir = playerDir (head players)
+
+len :: V2 -> Double
+len (a,b) = sqrt (a*a + b*b)
+
+norm :: V2 -> V2
+norm v@(a,b) = (a/l,b/l) where l = len v
+
+dir2ang :: V2 -> Angle
+dir2ang v = atan2 x y where (x,y) = norm v 
+
+ang2dir :: Angle -> V2
+ang2dir a = (cos(a), sin(a)) 
+
+rescale :: Double -> [Point] -> [Point]
+rescale sf ps = map (\(x,y) -> (x*sf,y*sf)) ps
 
 colorBlack = color $ RGBA 0 0 0 1.0
 colorWhite = color $ RGBA 255 255 255 1.0
