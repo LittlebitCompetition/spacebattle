@@ -14,53 +14,10 @@ import Haste.Graphics.Canvas
 
 import Keys.KeyCodes
 import Vector
+import Player
+import Protocol
 
 type State = (IORef [(SessionID, C.MVar GameState)], IORef GameState)
-
-
-data Player = Player{ playerName  :: String
-                    , playerDies  :: Int
-                    , playerKills :: Int
-                    , playerPos   :: V2
-                    , playerDir   :: V2
-                    , playerVel   :: V2
-                    }
-            deriving (Eq, Show, Read)
-instance Serialize Player where
-  toJSON p = Dict [("playerName",  toJSON $ playerName  p)
-                  ,("playerDies",  toJSON $ playerDies  p)
-                  ,("playerKills", toJSON $ playerKills p)
-                  ,("playerPos",   toJSON $ playerPos   p)
-                  ,("playerDir",   toJSON $ playerDir   p)
-                  ,("playerVel",   toJSON $ playerVel   p)]
-  parseJSON obj = do
-    n   <- obj .: "playerName"
-    ds  <- obj .: "playerDies"
-    ks  <- obj .: "playerKills"
-    pos <- obj .: "playerPos"
-    dir <- obj .: "playerDir"
-    vel <- obj .: "playerVel"
-    return $ Player n ds ks pos dir vel
-
-defaultPlayer = Player "noName" 0 0 (0,0) (0,0) (0,0)
---defaultPlayer = Player "noName" 0 0 0 0 0
-
-data PlayerAction = Pause
-                  | StartTurnLeft
-                  | StopTurnLeft
-                  | StartTurnRight
-                  | StopTurnRight
-                  | StartFire
-                  | StopFire
-                  | StartAfterburner
-                  | StopAfterburner
-                  deriving (Eq, Show, Enum, Read)
-
-instance Serialize PlayerAction where
-  toJSON act = Dict [("player_action", toJSON $ show act)]
-  parseJSON obj = do
-    act <- obj .: "player_action"
-    return $ read act
 
 data GameState = GameState { gsPaused       :: Bool
                            , players        :: [Player]
