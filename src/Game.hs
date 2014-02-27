@@ -13,10 +13,10 @@ import Haste.JSON
 import Haste.Graphics.Canvas
 
 import Keys.KeyCodes
+import Vector
 
 type State = (IORef [(SessionID, C.MVar GameState)], IORef GameState)
 
-type V2 = (Double,Double)
 
 data Player = Player{ playerName  :: String
                     , playerDies  :: Int
@@ -175,17 +175,6 @@ renderPlayers players = do
   translate (400,300) $ rotate (dir2ang dir) $ colorWhite $ stroke $ path $ rescale 20 shipShape
   where dir = playerDir (head players)
 
-len :: V2 -> Double
-len (a,b) = sqrt (a*a + b*b)
-
-norm :: V2 -> V2
-norm v@(a,b) = (a/l,b/l) where l = len v
-
-dir2ang :: V2 -> Angle
-dir2ang v = atan2 x y where (x,y) = norm v 
-
-ang2dir :: Angle -> V2
-ang2dir a = (cos(a), sin(a)) 
 
 rescale :: Double -> [Point] -> [Point]
 rescale sf ps = map (\(x,y) -> (x*sf,y*sf)) ps
