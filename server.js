@@ -58,7 +58,8 @@ function onClientDisconnect() {
 };
 
 function onNewPlayer(data) {	
-	var newPlayer = new player(this.id, data.x, data.y);	
+	var newPlayer = new player(data.x, data.y);
+	newPlayer.id = this.id;
 
 	this.broadcast.emit("new player", {id: newPlayer.id, x: newPlayer.getX(),
 		y: newPlayer.getY()});
@@ -75,7 +76,7 @@ function onNewPlayer(data) {
 };
 
 function onMovePlayer(data) {
-	var movePlayer = new player(data.x, data.y);
+	var movePlayer = playerById(this.id);
 
 	if (!movePlayer) {
 		util.log("Player not found: " + this.id);
