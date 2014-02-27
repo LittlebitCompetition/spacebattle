@@ -26,14 +26,16 @@ var init = function() {
 	renderer.domElement.focus();
 
 	// Creating new orthographic camera.
-	camera = new THREE.OrthographicCamera(0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 1);
-	camera.posiztion.z = 1;
+	camera = new THREE.OrthographicCamera(0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 1000);
+	camera.position.z = 1000;
 
 	// Creating main scene.
 	scene = new THREE.Scene();
 
 	// Initialise keyboard controls.
 	keyboard = new THREEx.KeyboardState(renderer.domElement);
+
+	localPlayer = new player(scene, 200, 200);
 
 	// Set window resize handler.
 	window.addEventListener("resize", onResize, false);
@@ -55,7 +57,7 @@ var animate = function() {
 	update();
 	render();
 
-	requestAnimationFrame(render);
+	requestAnimationFrame(animate);
 }
 
 /**
