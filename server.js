@@ -63,7 +63,7 @@ var update = function() {
 	while(tickTime < realTime) {		
 		// Sync clients.
 		if (tickCount % syncRate === 0) {
-
+			clientsSync();
 		}
 		// Updating logic and physics.
 		if (tickCount % logicRate === 0) {
@@ -77,10 +77,59 @@ var update = function() {
 };
 
 /**
+ *	Client sync.
+ */
+var clientsSync = function() {	
+	for (i = 0; i < players.length; i++) {
+		socket.sockets.emit("move player", {id: players[i].id,
+		 x: players[i].getX(), y: players[i].getY()});
+	}
+}
+
+/**
  *	Logic and physics update goes here.
  */
  var logicUpdate = function() {
- 	util.log("Update was called.");
+ 	// Process player input.
+ 	for (i = 0; i < players.length; i++) {
+ 		var ic = players[i].inputs.length;
+ 		var x_dir = 0;
+ 		var y_dir = 0;
+ 		if (ic) {
+ 			for (j = 0; j < ic; j++) { 		
+ 				var input = players[i].inputs[j].split('-');
+ 				var c = input.length;
+ 				for (k = 0; k < c; k++) {
+ 					var key = input[k];
+ 					if(key == 'l') {
+	                    x_dir -= 1;
+	                }
+	                if(key == 'r') {
+	                    x_dir += 1;
+	                }
+	                if(key == 'd') {
+	                    y_dir += 1;
+	                }
+	                if(key == 'u') {
+	                    y_dir -= 1;
+	                }
+ 				}
+ 			}	 		
+
+ 			util.log("Player: " + players[i].id + " x_dir: " + x_dir + " y_dir: " + y_dir);
+
+	 		var playerX = players[i].getX();
+	 		var playerY = players[i].getY();
+
+	 		playerX += x_dir * 2;
+	 		playerY += y_dir * 2;
+
+	 		players[i].setX(playerX);
+	 		players[i].setY(playerY);
+
+	 		players[i].inputs.splice(0, players[i].inputs.length);
+ 		} 		
+ 	} 	
  };
 
 /**
@@ -144,11 +193,13 @@ function onMovePlayer(data) {
 		return;
 	}
 
-	movePlayer.setX(data.x);
-	movePlayer.setY(data.y);
+	movePlayer.inputs.push(data.i);
 
-	this.broadcast.emit("move player", {id: movePlayer.id, x: movePlayer.getX(), 
-		y: movePlayer.getY()});
+	//movePlayer.setX(data.x);
+	//movePlayer.setY(data.y);
+
+	//this.broadcast.emit("move player", {id: movePlayer.id, x: movePlayer.getX(), 
+	//	y: movePlayer.getY()});
 };
 
 function playerById(id) {

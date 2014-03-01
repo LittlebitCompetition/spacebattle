@@ -47,35 +47,38 @@ var player = function(scene, startX, startY) {
 	 *	Player movement update.
 	 */
 	var update = function(keyboard) {
-		if (keyboard.pressed('d')) {
-			x += velocity;
+		var input = [];		
+
+		if (keyboard.pressed('w')) {
+			input.push('u');
+			y += velocity;
+		}
+
+		if (keyboard.pressed('s')) {
+			input.push('d');
+			y -= velocity;
 		}
 
 		if (keyboard.pressed('a')) {
-			x -= velocity;	
+			input.push('l');
+			x -= velocity;
 		}
-		
-		if (keyboard.pressed('w')) {
-			y += velocity;
-		}
-		
-		if (keyboard.pressed('s')) {
-			y -= velocity;
+
+		if (keyboard.pressed('d')) {
+			input.push('r');
+			x += velocity;
 		}
 
 		if (model !== undefined) {
 			model.position.x = x;
-			model.position.y = y;	
+			model.position.y = y;
 		}
 
-		if (prevX != x || prevY != y) {
-			prevX = x;
-			prevY = y;
-
-			return true;
-		} else {
-			return false;
+		if (input.length) {
+			return input.join('-');			
 		}
+
+		return null;
 	};
 
 	return {

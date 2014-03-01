@@ -4,7 +4,10 @@
  var player = function(startX, startY) {
  	var x = startX,
  		y = startY,
+ 		inputs,
  		id;
+
+ 	inputs = [];
 
  	var getX = function() {
  		return x;
@@ -27,6 +30,7 @@
  		getY: getY,
  		setX: setX,
  		setY: setY,
+ 		inputs: inputs,
  		id: id
  	}
  };

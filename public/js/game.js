@@ -136,8 +136,9 @@ var animate = function() {
  *	Game update.
  */
 var update = function() {
-	if (localPlayer.update(keyboard)) {
-		socket.emit("move player", {x: localPlayer.getX(), y: localPlayer.getY()});
+	var server_packet = localPlayer.update(keyboard);
+	if (server_packet) {
+		socket.emit("move player", {i: server_packet});
 	}
 };
 
