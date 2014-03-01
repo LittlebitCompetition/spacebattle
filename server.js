@@ -108,10 +108,10 @@ var clientsSync = function() {
 	                    x_dir += 1;
 	                }
 	                if(key == 'd') {
-	                    y_dir += 1;
+	                    y_dir -= 1;
 	                }
 	                if(key == 'u') {
-	                    y_dir -= 1;
+	                    y_dir += 1;
 	                }
  				}
  			}	 		
