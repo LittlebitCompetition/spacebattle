@@ -5,10 +5,21 @@ var util 	= require("util"),
 var socket,
 	players;
 
+var tickTime,
+	tickRate,
+	tickCount,
+	tickInterval;
+
+var logicRate,
+	syncRate;
+
+var frameTime,
+	realTime;
+
 /** 
  *	Initialising the server.
  */
-function init() {
+function init(options) {
 	players = [];
 
 	// Set socket.io to 8000 port.
@@ -17,10 +28,60 @@ function init() {
 	socket.configure(function() {
 		socket.set("transports", ["websocket"]);
 		socket.set("log level", 2);
-	});
+	});	
+
+	// Ticking.
+	tickTime 		= 0;
+	tickRate 		= Math.floor(1000 / (options.tickRate || 30));
+	tickCount 		= 0;
+	tickInterval 	= null;
+
+	// Used for throttling logic ticks.
+	logicRate 	= options.logicRate || 5;
+	// Send down tick count to clients every X updates.
+	syncRate	= options.syncRate || 30;
+
+	tickInterval = setInterval(function() {
+		update();
+	}, tickRate);
+
+	frameTime 	= Date.now();
+	tickCount 	= 1;
+	realTime	= 0;
 
 	setEventHandlers();
 }
+
+/**
+ *	Server update function.
+ */
+var update = function() {
+	var currentTime = Date.now();
+
+	realTime += (currentTime - frameTime);	
+
+	while(tickTime < realTime) {		
+		// Sync clients.
+		if (tickCount % syncRate === 0) {
+
+		}
+		// Updating logic and physics.
+		if (tickCount % logicRate === 0) {
+			logicUpdate();
+		}
+
+		tickCount++;
+		tickTime += tickRate;
+	}
+	frameTime = currentTime;
+};
+
+/**
+ *	Logic and physics update goes here.
+ */
+ var logicUpdate = function() {
+ 	util.log("Update was called.");
+ };
 
 /**
  *	Event handler for connection.
@@ -101,4 +162,4 @@ function playerById(id) {
 	return false;
 }
 
-init();
+init({});
