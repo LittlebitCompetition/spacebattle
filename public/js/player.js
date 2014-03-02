@@ -77,27 +77,6 @@ var player = function(scene, startX, startY) {
 			angle -= angularVelocity;
 		}
 
-		if (model !== undefined) {
-			var xv = Math.cos(angle);
-			var yv = Math.sin(angle);
-
-			if (velocity > maxV) {
-				velocity = maxV;
-			}
-
-			if (velocity < minV) {
-				velocity = minV;
-			}
-
-			x += xv * velocity;
-			y += yv * velocity;
-
-			model.position.x = x;
-			model.position.y = y;
-
-			model.rotation.y = angle;
-		}
-
 		if (input.length) {
 			return input.join('-');			
 		}
