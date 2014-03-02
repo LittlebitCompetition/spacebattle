@@ -82,7 +82,7 @@ var update = function() {
 var clientsSync = function() {	
 	for (i = 0; i < players.length; i++) {
 		socket.sockets.emit("move player", {id: players[i].id,
-		 x: players[i].getX(), y: players[i].getY()});
+		 x: players[i].getX(), y: players[i].getY(), a: players[i].getAngle()});
 	}
 }
 
@@ -93,39 +93,52 @@ var clientsSync = function() {
  	// Process player input.
  	for (i = 0; i < players.length; i++) {
  		var ic = players[i].inputs.length;
- 		var x_dir = 0;
- 		var y_dir = 0;
+ 		var velocity = players[i].velocity; 		
  		if (ic) {
  			for (j = 0; j < ic; j++) { 		
  				var input = players[i].inputs[j].split('-');
+
+ 				var playerX = players[i].getX();
+	 			var playerY = players[i].getY();
+
+	 			var angle = players[i].getAngle();
+
  				var c = input.length;
  				for (k = 0; k < c; k++) {
  					var key = input[k];
  					if(key == 'l') {
-	                    x_dir -= 1;
+	                    angle += 0.1;
 	                }
 	                if(key == 'r') {
-	                    x_dir += 1;
+	                    angle -= 0.1;
 	                }
 	                if(key == 'd') {
-	                    y_dir -= 1;
+	                    velocity--;
 	                }
 	                if(key == 'u') {
-	                    y_dir += 1;
+	                    velocity++;
 	                }
  				}
- 			}	 		
 
- 			util.log("Player: " + players[i].id + " x_dir: " + x_dir + " y_dir: " + y_dir);
+ 				if (velocity > 10) {
+ 					velocity = 10;
+ 				}
 
-	 		var playerX = players[i].getX();
-	 		var playerY = players[i].getY();
+ 				if (velocity < 0) {
+ 					velocity = 0;
+ 				}
 
-	 		playerX += x_dir * 2;
-	 		playerY += y_dir * 2;
+ 				var xv = Math.cos(angle);
+				var yv = Math.sin(angle);
 
-	 		players[i].setX(playerX);
-	 		players[i].setY(playerY);
+		 		playerX += xv * velocity;
+		 		playerY += yv * velocity;
+
+		 		players[i].setX(playerX);
+	 			players[i].setY(playerY);
+
+	 			players[i].setAngle(angle);
+ 			} 			
 
 	 		players[i].inputs.splice(0, players[i].inputs.length);
  		} 		

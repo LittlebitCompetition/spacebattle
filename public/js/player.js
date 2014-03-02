@@ -5,19 +5,21 @@ var player = function(scene, startX, startY) {
 	var id,
 		x = startX,
 		y = startY,
-		prevX = x,
-		prevY = y,
-		velocity = 2;
+		angle = 0,
+		velocity = 0,
+		minV = 0,
+		maxV = 10,
+		angularVelocity = 0.1;
 
 	var model,
 		localScene = scene;
 
 	// Loading fighter model.
-	THREEx.SpaceShips.loadSpaceFighter01(function(object3d){
+	THREEx.SpaceShips.loadSpaceFighter02(function(object3d){
 		model = object3d;
 		object3d.scale.set(0.2, 0.2, 0.2);
 		object3d.position.set(x, y, 100);
-		object3d.rotation.set(Math.PI / 2, Math.PI / 2, 0);
+		object3d.rotation.set(Math.PI / 2, 0, 0);
 		localScene.add(model);
 	});
 
@@ -39,6 +41,11 @@ var player = function(scene, startX, startY) {
 	    model.position.y = newY;
 	};
 
+	var setAngle = function(newAngle) {
+		angle = newAngle;
+		model.rotation.y = angle;
+	}
+
 	var clear = function() {
 		localScene.remove(model);
 	};
@@ -51,27 +58,44 @@ var player = function(scene, startX, startY) {
 
 		if (keyboard.pressed('w')) {
 			input.push('u');
-			y += velocity;
+			velocity++;
 		}
 
 		if (keyboard.pressed('s')) {
 			input.push('d');
-			y -= velocity;
+			velocity--;
 		}
 
 		if (keyboard.pressed('a')) {
 			input.push('l');
-			x -= velocity;
+			angle += angularVelocity;
+			
 		}
 
 		if (keyboard.pressed('d')) {
 			input.push('r');
-			x += velocity;
+			angle -= angularVelocity;
 		}
 
 		if (model !== undefined) {
+			var xv = Math.cos(angle);
+			var yv = Math.sin(angle);
+
+			if (velocity > maxV) {
+				velocity = maxV;
+			}
+
+			if (velocity < minV) {
+				velocity = minV;
+			}
+
+			x += xv * velocity;
+			y += yv * velocity;
+
 			model.position.x = x;
 			model.position.y = y;
+
+			model.rotation.y = angle + Math.PI / 2;
 		}
 
 		if (input.length) {
@@ -86,7 +110,8 @@ var player = function(scene, startX, startY) {
 		getX: getX,
 		getY: getY,
 		setX: setX,
-		setY: setY,		
+		setY: setY,
+		setAngle: setAngle,		
 		clear: clear,
 		update: update,		
 	};

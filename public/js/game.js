@@ -97,6 +97,7 @@ function onMovePlayer(data) {
 
 	movePlayer.setX(data.x);
 	movePlayer.setY(data.y);
+	movePlayer.setAngle(data.a + Math.PI / 2);
 };
 
 function onRemovePlayer(data) {

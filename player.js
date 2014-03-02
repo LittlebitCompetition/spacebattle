@@ -4,6 +4,8 @@
  var player = function(startX, startY) {
  	var x = startX,
  		y = startY,
+ 		angle = 0,
+ 		velocity = 0,
  		inputs,
  		id;
 
@@ -17,6 +19,10 @@
  		return y;
  	};
 
+	var getAngle = function() {
+ 		return angle;
+ 	}
+
  	var setX = function(newX) {
  		x = newX;
  	};
@@ -25,12 +31,19 @@
  		y = newY
  	}; 	
 
+ 	var setAngle = function(newAngle) {
+ 		angle = newAngle;
+ 	} 	
+
  	return {
  		getX: getX,
  		getY: getY,
+ 		getAngle: getAngle,
  		setX: setX,
  		setY: setY,
+ 		setAngle: setAngle,
  		inputs: inputs,
+ 		velocity: velocity,
  		id: id
  	}
  };
