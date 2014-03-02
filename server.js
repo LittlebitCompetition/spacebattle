@@ -32,14 +32,14 @@ function init(options) {
 
 	// Ticking.
 	tickTime 		= 0;
-	tickRate 		= Math.floor(1000 / (options.tickRate || 30));
+	tickRate 		= 10;
 	tickCount 		= 0;
 	tickInterval 	= null;
 
 	// Used for throttling logic ticks.
-	logicRate 	= options.logicRate || 5;
+	logicRate 	= options.logicRate || 1;
 	// Send down tick count to clients every X updates.
-	syncRate	= options.syncRate || 30;
+	syncRate	= options.syncRate || 1;
 
 	tickInterval = setInterval(function() {
 		update();
@@ -92,17 +92,16 @@ var clientsSync = function() {
  var logicUpdate = function() {
  	// Process player input.
  	for (i = 0; i < players.length; i++) {
+ 		var velocity = players[i].velocity;
+ 		var angle = players[i].getAngle();
+
+ 		var playerX = players[i].getX();
+	 	var playerY = players[i].getY();
+
  		var ic = players[i].inputs.length; 		 		
  		if (ic) {
- 			for (j = 0; j < ic; j++) { 		
- 				var velocity = players[i].velocity;
-
- 				var input = players[i].inputs[j].split('-');
-
- 				var playerX = players[i].getX();
-	 			var playerY = players[i].getY();
-
-	 			var angle = players[i].getAngle();
+ 			for (j = 0; j < ic; j++) {
+ 				var input = players[i].inputs[j].split('-'); 					 			
 
  				var c = input.length;
  				for (k = 0; k < c; k++) {
@@ -120,32 +119,32 @@ var clientsSync = function() {
 	                    velocity++;
 	                }
  				}
-
- 				if (velocity > 10) {
- 					velocity = 10;
- 				}
-
- 				if (velocity < 0) {
- 					velocity = 0;
- 				}
-
- 				var xv = Math.cos(angle);
-				var yv = Math.sin(angle);
-
-		 		playerX += xv * velocity;
-		 		playerY += yv * velocity;
-
-		 		players[i].setX(playerX);
-	 			players[i].setY(playerY);
-
-	 			players[i].setAngle(angle);
-
-	 			players[i].velocity = velocity;
  			} 			
 
 	 		players[i].inputs.splice(0, players[i].inputs.length);
- 		} 		
- 	} 	
+ 		}
+
+		if (velocity > 10) {
+			velocity = 10;
+		}
+
+		if (velocity < 0) {
+			velocity = 0;
+		}
+
+		var xv = Math.cos(angle);
+		var yv = Math.sin(angle);
+
+		playerX += xv * velocity;
+		playerY += yv * velocity;
+
+		players[i].setX(playerX);
+		players[i].setY(playerY);
+
+		players[i].setAngle(angle);
+
+		players[i].velocity = velocity; 
+ 	}	
  };
 
 /**
@@ -191,6 +190,8 @@ function onNewPlayer(data) {
 		y: newPlayer.getY()});
 
 	var i, existingPlayer;
+
+	this.emit("new id", {id: newPlayer.id});
 
 	for (i = 0; i < players.length; i++) {
 		existingPlayer = players[i];

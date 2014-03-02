@@ -95,7 +95,7 @@ var player = function(scene, startX, startY) {
 			model.position.x = x;
 			model.position.y = y;
 
-			model.rotation.y = angle + Math.PI / 2;
+			model.rotation.y = angle;
 		}
 
 		if (input.length) {

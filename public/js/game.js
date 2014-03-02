@@ -42,6 +42,8 @@ var init = function() {
 
 	remotePlayers = [];
 
+	remotePlayers.push(localPlayer);
+
 	// Connecting to local server.
 	socket = io.connect("http://localhost", {port: 8000, transports: ["websocket"]});
 
@@ -58,6 +60,7 @@ var setEventHandlers = function() {
 	socket.on("connect", onSocketConnected);
 	socket.on("disconnect", onSocketDisconnect);
 	socket.on("new player", onNewPlayer);
+	socket.on("new id", onNewId);
 	socket.on("move player", onMovePlayer);
 	socket.on("remove player", onRemovePlayer);
 };
@@ -86,6 +89,11 @@ function onNewPlayer(data) {
 	newPlayer.id = data.id;
 	remotePlayers.push(newPlayer);
 };
+
+function onNewId(data) {
+	console.log("New id acquired: " + data.id);
+	localPlayer.id = data.id;
+}
 
 function onMovePlayer(data) {
 	var movePlayer = playerById(data.id);
