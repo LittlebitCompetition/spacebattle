@@ -92,10 +92,11 @@ var clientsSync = function() {
  var logicUpdate = function() {
  	// Process player input.
  	for (i = 0; i < players.length; i++) {
- 		var ic = players[i].inputs.length;
- 		var velocity = players[i].velocity; 		
+ 		var ic = players[i].inputs.length; 		 		
  		if (ic) {
  			for (j = 0; j < ic; j++) { 		
+ 				var velocity = players[i].velocity;
+
  				var input = players[i].inputs[j].split('-');
 
  				var playerX = players[i].getX();
@@ -138,6 +139,8 @@ var clientsSync = function() {
 	 			players[i].setY(playerY);
 
 	 			players[i].setAngle(angle);
+
+	 			players[i].velocity = velocity;
  			} 			
 
 	 		players[i].inputs.splice(0, players[i].inputs.length);
