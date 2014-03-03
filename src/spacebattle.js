@@ -12,7 +12,8 @@ var bullets_max = 300;
 var stars_max = 20;
 var max_vel = 7;
 var bullet_life = 300;
-var gravity_affect2bullet = false;
+//var bullet_life = 1000;
+var gravity_affect2bullet = true;
 
 
 //rotate(200,200,0,0,-1); // 0,400
@@ -45,7 +46,7 @@ function draw(){
 
 	draw_stars();
 
-	draw_energy();
+//	draw_energy();
 	logic_energy();
 
 	Bullet.draw_all();
