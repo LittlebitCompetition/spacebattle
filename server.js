@@ -32,7 +32,7 @@ function init(options) {
 
 	// Ticking.
 	tickTime 		= 0;
-	tickRate 		= 10;
+	tickRate 		= Math.floor(1000 / (options.tickRate || 30));
 	tickCount 		= 0;
 	tickInterval 	= null;
 
@@ -211,12 +211,6 @@ function onMovePlayer(data) {
 	}
 
 	movePlayer.inputs.push(data.i);
-
-	//movePlayer.setX(data.x);
-	//movePlayer.setY(data.y);
-
-	//this.broadcast.emit("move player", {id: movePlayer.id, x: movePlayer.getX(), 
-	//	y: movePlayer.getY()});
 };
 
 function playerById(id) {
