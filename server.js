@@ -1,6 +1,7 @@
 var util 	= require("util"),
 	io 		= require("socket.io"),
-	player 	= require("./player").player;
+	player 	= require("./entity").entity,
+	bullet	= require("./entity").entity;
 
 var socket,
 	players;

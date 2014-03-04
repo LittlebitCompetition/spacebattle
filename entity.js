@@ -1,13 +1,18 @@
 /**
- * Server player class.
+ * Server entity class.
  */
- var player = function(startX, startY) {
- 	var x = startX,
- 		y = startY,
+ var entity = function(startX, startY) {
+ 	var id,
+ 		x,
+ 		y,
+ 		inputs,
  		angle = 0,
  		velocity = 0,
- 		inputs,
- 		id;
+ 		startTime = 0,
+ 		aliveTime = -1; 		
+
+ 	x = startX;
+ 	y = startY;
 
  	inputs = [];
 
@@ -36,18 +41,20 @@
  	} 	
 
  	return {
+ 		id: id,
  		getX: getX,
- 		getY: getY,
- 		getAngle: getAngle,
+ 		getY: getY, 	
  		setX: setX,
  		setY: setY,
- 		setAngle: setAngle,
  		inputs: inputs,
  		velocity: velocity,
- 		id: id
+ 		getAngle: getAngle,
+ 		setAngle: setAngle, 	 	
+ 		startTime: startTime,
+ 		aliveTime: aliveTime 		
  	}
  };
 
- // Export the Player class so you can use it in
-// other files by using require("Player").Player
-exports.player = player;
+// Export the entity class so you can use it in
+// other files by using require("entity").entity
+exports.entity = entity;
