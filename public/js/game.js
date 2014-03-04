@@ -135,10 +135,14 @@ function playerById(id) {
  *	Game animation loop.
  */
 var animate = function() {
+
+	// Start update at 60 fps.
+	setTimeout(function(){
+		requestAnimationFrame(animate);
+	}, 1000 / 60);
+
 	update();
 	render();
-
-	requestAnimationFrame(animate);
 };
 
 /**
