@@ -18,8 +18,10 @@ var frameTime,
 	realTime;
 
 var bullets,
+	bulletId,
 	maxBullets,
-	bulletsToSend;
+	bulletsToSend,
+	bulletsToRemove;
 	
 
 /** 
@@ -27,8 +29,12 @@ var bullets,
  */
 function init(options) {
 	players = [];
+
+	bulletId = 0;
+
 	bullets = [];
 	bulletsToSend = [];
+	bulletsToRemove = [];
 
 	maxBullets = 100;
 
@@ -96,11 +102,17 @@ var clientsSync = function() {
 	}
 
 	for (i = 0; i < bulletsToSend.length; i++) {
-		socket.sockets.emit("bullet", {x: bulletsToSend[i].getX(),
-			y: bulletsToSend[i].getY(), a: bulletsToSend[i].getAngle(),
-			v: bulletsToSend[i].velocity, t: bulletsToSend[i].aliveTime});
+		socket.sockets.emit("bullet", {id: bulletsToSend[i].id,
+			x: bulletsToSend[i].getX(),	y: bulletsToSend[i].getY(), 
+			a: bulletsToSend[i].getAngle(),	v: bulletsToSend[i].velocity, 
+			t: bulletsToSend[i].aliveTime});
 	}
 	bulletsToSend.splice(0, bulletsToSend.length);
+
+	for (i = 0; i < bulletsToRemove.length; i++) {
+		socket.sockets.emit("remove bullet", {id: bulletsToRemove[i].id});
+	}
+	bulletsToRemove.splice(0, bulletsToRemove.length);
 }
 
 /**
@@ -136,8 +148,9 @@ var clientsSync = function() {
 	                    velocity++;
 	                }
 	                if(key == 'b') {
-	                	b = new bullet(playerX, playerY);
-	                	b.id = players[i].id;
+	                	b = new bullet(playerX, playerY, 5);
+	                	b.id = bulletId++;
+	                	b.parentId = players[i].id;
 	                	b.setAngle(angle);
 	                	b.startTime = frameTime;
 	                	b.aliveTime = 2000;
@@ -194,6 +207,13 @@ var clientsSync = function() {
 
  			bullets[i].setX(newX);
  			bullets[i].setY(newY);
+
+ 			for (j = 0; j < players.length; j++) {
+ 				if (bullets[i].collision(players[j]) 
+ 					&& bullets[i].parentId != players[j].id) { 					
+ 					bulletsToRemove.push(bullets[i]);
+ 				}	
+ 			} 			
 		} else {
 			b = bullets[i];
  		 	bullets.splice(i, 1);
@@ -239,7 +259,7 @@ function onClientDisconnect() {
 };
 
 function onNewPlayer(data) {	
-	var newPlayer = new player(data.x, data.y);
+	var newPlayer = new player(data.x, data.y, 30);
 	newPlayer.id = this.id;
 
 	this.broadcast.emit("new player", {id: newPlayer.id, x: newPlayer.getX(),
