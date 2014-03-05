@@ -17,11 +17,20 @@ var logicRate,
 var frameTime,
 	realTime;
 
+var bullets,
+	maxBullets,
+	bulletsToSend;
+	
+
 /** 
  *	Initialising the server.
  */
 function init(options) {
 	players = [];
+	bullets = [];
+	bulletsToSend = [];
+
+	maxBullets = 100;
 
 	// Set socket.io to 8000 port.
 	socket = io.listen(8000);
@@ -85,6 +94,13 @@ var clientsSync = function() {
 		socket.sockets.emit("move player", {id: players[i].id,
 		 x: players[i].getX(), y: players[i].getY(), a: players[i].getAngle()});
 	}
+
+	for (i = 0; i < bulletsToSend.length; i++) {
+		socket.sockets.emit("bullet", {x: bulletsToSend[i].getX(),
+			y: bulletsToSend[i].getY(), a: bulletsToSend[i].getAngle(),
+			v: bulletsToSend[i].velocity, t: bulletsToSend[i].aliveTime});
+	}
+	bulletsToSend.splice(0, bulletsToSend.length);
 }
 
 /**
@@ -119,6 +135,22 @@ var clientsSync = function() {
 	                if(key == 'u') {
 	                    velocity++;
 	                }
+	                if(key == 'b') {
+	                	b = new bullet(playerX, playerY);
+	                	b.id = players[i].id;
+	                	b.setAngle(angle);
+	                	b.startTime = frameTime;
+	                	b.aliveTime = 2000;
+	                	b.velocity	= 20;
+
+	                	if (bullets.length < maxBullets) {
+	                		bullets.push(b);	
+	                	}
+
+	                	if (bulletsToSend.length < maxBullets) {
+	                		bulletsToSend.push(b);
+	                	}	                	
+	                }
  				}
  			} 			
 
@@ -146,6 +178,29 @@ var clientsSync = function() {
 
 		players[i].velocity = velocity; 
  	}	
+
+ 	for (i = 0; i < bullets.length; i++) {
+ 		if ((bullets[i].startTime + bullets[i].aliveTime) > frameTime) {
+ 			var angle = bullets[i].getAngle();
+
+ 			var xv = Math.cos(angle);
+ 			var yv = Math.sin(angle);
+
+ 			var newX = bullets[i].getX();
+ 			var newY = bullets[i].getY();
+
+ 			newX += xv * bullets[i].velocity;
+ 			newY += yv * bullets[i].velocity;
+
+ 			bullets[i].setX(newX);
+ 			bullets[i].setY(newY);
+		} else {
+			b = bullets[i];
+ 		 	bullets.splice(i, 1);
+ 		 	delete b;
+ 		 	i--;
+		}
+ 	}
  };
 
 /**

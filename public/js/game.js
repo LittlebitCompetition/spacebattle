@@ -41,6 +41,7 @@ var init = function() {
 	localPlayer = new player(scene, 200, 200);	
 
 	remotePlayers = [];
+	bullets = [];
 
 	remotePlayers.push(localPlayer);
 
@@ -61,6 +62,7 @@ var setEventHandlers = function() {
 	socket.on("disconnect", onSocketDisconnect);
 	socket.on("new player", onNewPlayer);
 	socket.on("new id", onNewId);
+	socket.on("bullet", onBullet);
 	socket.on("move player", onMovePlayer);
 	socket.on("remove player", onRemovePlayer);
 };
@@ -89,6 +91,13 @@ function onNewPlayer(data) {
 	newPlayer.id = data.id;
 	remotePlayers.push(newPlayer);
 };
+
+function onBullet(data) {
+	var bulletCircle = new bullet(scene, data.x, data.y, data.a,
+		data.v / 2, data.t);
+
+	bullets.push(bulletCircle);
+}
 
 function onNewId(data) {
 	console.log("New id acquired: " + data.id);
@@ -152,6 +161,18 @@ var update = function() {
 	var server_packet = localPlayer.update(keyboard);
 	if (server_packet) {
 		socket.emit("move player", {i: server_packet});
+	}
+
+	for (i = 0; i < bullets.length; i++) {
+		if (bullets[i].expired()) {
+			bullets[i].update();	
+		} else {
+			b = bullets[i];
+			b.remove();
+ 			bullets.splice(i, 1);
+ 			delete b;
+ 			i--;
+		}		
 	}
 };
 

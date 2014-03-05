@@ -77,9 +77,13 @@ var player = function(scene, startX, startY) {
 			angle -= angularVelocity;
 		}
 
+		if (keyboard.pressed('space')) {
+			input.push('b');
+		}
+
 		if (input.length) {
 			return input.join('-');			
-		}
+		}		
 
 		return null;
 	};
