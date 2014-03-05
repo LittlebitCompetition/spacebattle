@@ -62,9 +62,11 @@ var setEventHandlers = function() {
 	socket.on("disconnect", onSocketDisconnect);
 	socket.on("new player", onNewPlayer);
 	socket.on("new id", onNewId);
-	socket.on("bullet", onBullet);
 	socket.on("move player", onMovePlayer);
 	socket.on("remove player", onRemovePlayer);
+
+	socket.on("bullet", onBullet);
+	socket.on("remove bullet", onRemoveBullet);
 };
 
 /**
@@ -93,10 +95,22 @@ function onNewPlayer(data) {
 };
 
 function onBullet(data) {
-	var bulletCircle = new bullet(scene, data.x, data.y, data.a,
-		data.v / 2, data.t);
+	var bulletCircle = new bullet(scene, data.id, data.x, data.y, data.a,
+		data.v / 1.5, data.t);
 
 	bullets.push(bulletCircle);
+}
+
+function onRemoveBullet(data) {
+	for (i = 0; i < bullets.length; i++) {
+		if (bullets[i].id == data.id) {
+			b = bullets[i];
+			b.remove();
+			bullets.splice(i, 1);
+			delete b;
+			i--;
+		}
+	}
 }
 
 function onNewId(data) {

@@ -1,8 +1,9 @@
 /**
  *	Bullet client class.
  */
-var bullet = function(scene, newX, newY, newAngle, newVelocity, alive) {
-	var x = newX,
+var bullet = function(scene, newId, newX, newY, newAngle, newVelocity, alive) {
+	var id = newId,
+		x = newX,
 		y = newY,	
 		angle = newAngle,
 		startTime = Date.now(),
@@ -37,6 +38,7 @@ var bullet = function(scene, newX, newY, newAngle, newVelocity, alive) {
 	};
 
 	return {
+		id: id,
 		update: update,
 		remove: remove,
 		expired: expired
