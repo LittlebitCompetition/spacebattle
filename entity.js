@@ -5,6 +5,7 @@
  	var id,
  		x,
  		y,
+ 		health,
  		inputs,
 		radius,
 		parentId,
@@ -12,6 +13,8 @@
  		velocity = 0,
  		startTime = 0,
  		aliveTime = -1; 		
+
+ 	health = 100;
 
  	x = startX;
  	y = startY;
@@ -57,6 +60,7 @@
 		setY: setY,
 		inputs: inputs,
 		radius: radius,
+		health: health,
 		parentId: parentId,
 		velocity: velocity,
 		getAngle: getAngle,

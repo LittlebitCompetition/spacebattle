@@ -63,6 +63,7 @@ var setEventHandlers = function() {
 	socket.on("new player", onNewPlayer);
 	socket.on("new id", onNewId);
 	socket.on("move player", onMovePlayer);
+	socket.on("kill player", onRemovePlayer);
 	socket.on("remove player", onRemovePlayer);
 
 	socket.on("bullet", onBullet);

@@ -97,8 +97,16 @@ var update = function() {
  */
 var clientsSync = function() {	
 	for (i = 0; i < players.length; i++) {
-		socket.sockets.emit("move player", {id: players[i].id,
-		 x: players[i].getX(), y: players[i].getY(), a: players[i].getAngle()});
+		if (players[i].health > 0) {
+			socket.sockets.emit("move player", {id: players[i].id,
+		 		x: players[i].getX(), y: players[i].getY(), a: players[i].getAngle()});
+		} else {
+			socket.sockets.emit("kill player", {id: players[i].id});
+			p = players[i];
+			players.splice(i, 1);
+			delete p;
+			i--;
+		}		
 	}
 
 	for (i = 0; i < bulletsToSend.length; i++) {
@@ -212,6 +220,9 @@ var clientsSync = function() {
  				if (bullets[i].collision(players[j]) 
  					&& bullets[i].parentId != players[j].id) { 					
  					bulletsToRemove.push(bullets[i]);
+ 					bullets[i].aliveTime = 0;
+
+ 					players[j].health -= 5;
  				}	
  			} 			
 		} else {
