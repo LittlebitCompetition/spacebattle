@@ -46,7 +46,7 @@ var init = function() {
 	remotePlayers.push(localPlayer);
 
 	// Connecting to local server.
-	socket = io.connect("http://localhost", {port: 8000, transports: ["websocket"]});
+	socket = io.connect("http://localhost", {transports: ["websocket"]});
 
 	setEventHandlers();
 };

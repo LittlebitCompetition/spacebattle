@@ -3,6 +3,11 @@ var util 	= require("util"),
 	player 	= require("./entity").entity,
 	bullet	= require("./entity").entity;
 
+var express	= require('express'),
+	http	= require('http'),
+	app		= express(),
+	server 	= http.createServer(app);
+
 var socket,
 	players;
 
@@ -23,11 +28,16 @@ var bullets,
 	bulletsToSend,
 	bulletsToRemove;
 	
+var maxX,
+	maxY;
 
 /** 
  *	Initialising the server.
  */
 function init(options) {
+	maxX = 800;
+	maxY = 600;
+
 	players = [];
 
 	bulletId = 0;
@@ -38,8 +48,25 @@ function init(options) {
 
 	maxBullets = 100;
 
+	// Set up web server.
+	var serverPort = 80;
+
+	server.listen(serverPort);
+
+	// Log something so we know that it succeded.
+	util.log('info - web server on port: ' + serverPort);
+
+	app.use(express.static(process.cwd() + '/public'));
+
+	// By default, we forward the / path to index.html automatically.
+	app.get( '/', function( req, res ){
+		console.log('trying to load %s', __dirname + '/index.html');
+		res.sendfile( '/index.html' , { root:__dirname });
+	});
+
+
 	// Set socket.io to 8000 port.
-	socket = io.listen(8000);
+	socket = io.listen(server);
 
 	socket.configure(function() {
 		socket.set("transports", ["websocket"]);
@@ -197,7 +224,9 @@ var clientsSync = function() {
 
 		players[i].setAngle(angle);
 
-		players[i].velocity = velocity; 
+		players[i].velocity = velocity;
+
+		wrapEntities(players[i]);
  	}	
 
  	for (i = 0; i < bullets.length; i++) {
@@ -233,6 +262,30 @@ var clientsSync = function() {
 		}
  	}
  };
+
+/**
+ *	Wrap object coordinates.
+ */
+var wrapEntities = function(obj) {
+	var objX = obj.getX();
+	var objY = obj.getY();
+
+	if (objX > maxX) {
+		obj.setX(0);
+	}
+
+	if (objX < 0) {
+		obj.setX(maxX);
+	}
+
+	if (objY > maxY) {
+		obj.setY(0);
+	}
+
+	if (objY < 0) {
+		obj.setY(maxY);
+	}
+};
 
 /**
  *	Event handler for connection.
