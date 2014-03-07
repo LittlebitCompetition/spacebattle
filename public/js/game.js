@@ -12,6 +12,12 @@ var renderer,		// Rendering context.
 var audioContext,	// Audio context.
 	bufferLoader;	// Buffer loader.
 
+var gameoverSound,	// Game over sound.
+	engineSound,	// Engines sound.
+	beamSound;		// Beam sound.
+
+var bulletCount;
+
 var SCREEN_WIDTH,	// We use this to hold client window size.
 	SCREEN_HEIGHT;	// 
 
@@ -54,6 +60,8 @@ var init = function() {
 	// Set up background sound.
 	initSound();
 
+	bulletCount = 0;
+
 	setEventHandlers();
 };
 
@@ -80,11 +88,21 @@ function initSound() {
 };
 
 function finishedSoundLoading(bufferList) {
-	var source = audioContext.createBufferSource();
-	source.buffer = bufferList[2];
+	// Starting background music.
+	playSound(bufferList[2], 0, true);
 
+	// Assigning rsources.
+	gameoverSound = bufferList[1];
+	engineSound = bufferList[0];
+	beamSound = bufferList[3];
+}
+
+function playSound(buffer, time, loop) {
+	var source = audioContext.createBufferSource();
+	source.buffer = buffer;
+	source.loop = loop || false;
 	source.connect(audioContext.destination);
-	source.start(0);
+	source.start(time);
 }
 
 /**
@@ -136,6 +154,7 @@ function onBullet(data) {
 		data.v / 1.5, data.t);
 
 	bullets.push(bulletCircle);
+	bulletCount++;
 }
 
 function onRemoveBullet(data) {
@@ -225,6 +244,11 @@ var update = function() {
  			i--;
 		}		
 	}
+
+	for (i = 0; i < bulletCount; i++) {
+		playSound(beamSound, 0);
+	}
+	bulletCount = 0;
 };
 
 /**
