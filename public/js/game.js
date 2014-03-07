@@ -12,11 +12,13 @@ var renderer,		// Rendering context.
 var audioContext,	// Audio context.
 	bufferLoader;	// Buffer loader.
 
-var gameoverSound,	// Game over sound.
+var explosionSound, // Hit sound.
+	gameoverSound,	// Game over sound.
 	engineSound,	// Engines sound.
 	beamSound;		// Beam sound.
 
-var bulletCount;
+var hitCount,
+	bulletCount;
 
 var SCREEN_WIDTH,	// We use this to hold client window size.
 	SCREEN_HEIGHT;	// 
@@ -60,6 +62,7 @@ var init = function() {
 	// Set up background sound.
 	initSound();
 
+	hitCount = 0;
 	bulletCount = 0;
 
 	setEventHandlers();
@@ -80,7 +83,8 @@ function initSound() {
 				"sound/engines.wav",
 				"sound/gameover.wav",
 				"sound/intro.wav",
-				"sound/pulse.wav"
+				"sound/pulse.wav",
+				"sound/explosion.wav"
 		],
 		finishedSoundLoading);
 
@@ -92,6 +96,7 @@ function finishedSoundLoading(bufferList) {
 	playSound(bufferList[2], 0, true);
 
 	// Assigning rsources.
+	explosionSound = bufferList[4];
 	gameoverSound = bufferList[1];
 	engineSound = bufferList[0];
 	beamSound = bufferList[3];
@@ -185,6 +190,14 @@ function onMovePlayer(data) {
 	movePlayer.setX(data.x);
 	movePlayer.setY(data.y);
 	movePlayer.setAngle(data.a + Math.PI / 2);
+
+	var health = movePlayer.getHealth();
+
+	if (health != data.h) {
+		hitCount++;
+	}
+
+	movePlayer.setHealth(data.h);
 };
 
 function onRemovePlayer(data) {
@@ -249,6 +262,11 @@ var update = function() {
 		playSound(beamSound, 0);
 	}
 	bulletCount = 0;
+
+	for (i = 0; i < hitCount; i++) {
+		playSound(explosionSound, 0);
+	}
+	hitCount = 0;
 };
 
 /**

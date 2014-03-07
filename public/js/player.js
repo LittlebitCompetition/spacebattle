@@ -6,6 +6,7 @@ var player = function(scene, startX, startY) {
 		x = startX,
 		y = startY,
 		angle = 0,
+		health = 100,
 		velocity = 0,
 		minV = 0,
 		maxV = 10,
@@ -31,6 +32,10 @@ var player = function(scene, startX, startY) {
 	    return y;
 	};
 
+	var getHealth = function() {
+		return health;
+	}
+
 	var setX = function(newX) {
 	    x = newX;
 	    model.position.x = newX;
@@ -44,6 +49,10 @@ var player = function(scene, startX, startY) {
 	var setAngle = function(newAngle) {
 		angle = newAngle;
 		model.rotation.y = angle;
+	}
+
+	var setHealth = function(newHealth) {
+		health = newHealth;
 	}
 
 	var clear = function() {
@@ -94,7 +103,9 @@ var player = function(scene, startX, startY) {
 		getY: getY,
 		setX: setX,
 		setY: setY,
-		setAngle: setAngle,		
+		setAngle: setAngle,
+		getHealth: getHealth,
+		setHealth: setHealth,
 		clear: clear,
 		update: update,		
 	};

@@ -126,7 +126,8 @@ var clientsSync = function() {
 	for (i = 0; i < players.length; i++) {
 		if (players[i].health > 0) {
 			socket.sockets.emit("move player", {id: players[i].id,
-		 		x: players[i].getX(), y: players[i].getY(), a: players[i].getAngle()});
+				x: players[i].getX(), y: players[i].getY(),
+				a: players[i].getAngle(), h: players[i].health});
 		} else {
 			socket.sockets.emit("kill player", {id: players[i].id});
 			p = players[i];
@@ -138,8 +139,8 @@ var clientsSync = function() {
 
 	for (i = 0; i < bulletsToSend.length; i++) {
 		socket.sockets.emit("bullet", {id: bulletsToSend[i].id,
-			x: bulletsToSend[i].getX(),	y: bulletsToSend[i].getY(), 
-			a: bulletsToSend[i].getAngle(),	v: bulletsToSend[i].velocity, 
+			x: bulletsToSend[i].getX(),	y: bulletsToSend[i].getY(),
+			a: bulletsToSend[i].getAngle(),	v: bulletsToSend[i].velocity,
 			t: bulletsToSend[i].aliveTime});
 	}
 	bulletsToSend.splice(0, bulletsToSend.length);
