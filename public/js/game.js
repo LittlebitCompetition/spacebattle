@@ -9,6 +9,9 @@ var renderer,		// Rendering context.
 	remotePlayers,	// Enemies.
 	socket;			// Socket.io socket.
 
+var audioContext,	// Audio context.
+	bufferLoader;	// Buffer loader.
+
 var SCREEN_WIDTH,	// We use this to hold client window size.
 	SCREEN_HEIGHT;	// 
 
@@ -48,8 +51,41 @@ var init = function() {
 	// Connecting to local server.
 	socket = io.connect("http://localhost", {transports: ["websocket"]});
 
+	// Set up background sound.
+	initSound();
+
 	setEventHandlers();
 };
+
+function initSound() {
+	try {
+	    // Fix up for prefixing
+	    window.AudioContext = window.AudioContext||window.webkitAudioContext;
+	    audioContext = new AudioContext();
+	} catch(e) {
+		console.log("Web Audio API is not supported in this browser.");
+	}
+
+	bufferLoader = new BufferLoader(
+		audioContext,
+		[
+				"sound/engines.wav",
+				"sound/gameover.wav",
+				"sound/intro.wav",
+				"sound/pulse.wav"
+		],
+		finishedSoundLoading);
+
+	bufferLoader.load();
+};
+
+function finishedSoundLoading(bufferList) {
+	var source = audioContext.createBufferSource();
+	source.buffer = bufferList[2];
+
+	source.connect(audioContext.destination);
+	source.start(0);
+}
 
 /**
  *	Game event handler.
