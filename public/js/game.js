@@ -122,7 +122,7 @@ var setEventHandlers = function() {
 	socket.on("new player", onNewPlayer);
 	socket.on("new id", onNewId);
 	socket.on("move player", onMovePlayer);
-	socket.on("kill player", onRemovePlayer);
+	socket.on("kill player", onKillPlayer);
 	socket.on("remove player", onRemovePlayer);
 
 	socket.on("bullet", onBullet);
@@ -212,6 +212,14 @@ function onRemovePlayer(data) {
 
 	remotePlayers.splice(remotePlayers.indexOf(removePlayer), 1);
 };
+
+function onKillPlayer(data) {
+	if (data.id == localPlayer.id) {
+		playSound(gameoverSound, 0);
+	}
+
+	onRemovePlayer(data);
+}
 
 function playerById(id) {
     var i;
