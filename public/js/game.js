@@ -59,7 +59,7 @@ var init = function() {
 	scene = new THREE.Scene();
 
 	// Initialise keyboard controls.
-	keyboard = new THREEx.KeyboardState(renderer.domElement);
+	keyboard = new THREEx.KeyboardState();
 
 	// Set players.
 	localPlayer = new player(scene, 200, 200);	
