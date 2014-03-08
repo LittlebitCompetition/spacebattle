@@ -23,13 +23,26 @@ var hitCount,
 var SCREEN_WIDTH,	// We use this to hold client window size.
 	SCREEN_HEIGHT;	// 
 
+var stats;
+
 /**
  *	Game initialisation.
  */
 var init = function() {
 	// Get window size.
-	SCREEN_HEIGHT = window.innerHeight;
-	SCREEN_WIDTH  = window.innerWidth;
+	SCREEN_HEIGHT = 600;
+	SCREEN_WIDTH  = 800;
+
+	// Set up fps counter.
+	stats = new Stats();
+	stats.setMode(0);
+
+	// Align top-left
+	stats.domElement.style.position = 'absolute';
+	stats.domElement.style.left = '0px';
+	stats.domElement.style.top = '0px';
+
+	document.body.appendChild(stats.domElement);
 
 	// Declare rendering context.
 	renderer = new THREE.WebGLRenderer();
@@ -134,8 +147,8 @@ var setEventHandlers = function() {
  */
 function onResize(e) {
 	// Maximise the screen size.
-	SCREEN_HEIGHT = window.innerHeight;
-	SCREEN_WIDTH  = window.innerWidth;
+	SCREEN_HEIGHT = 600;
+	SCREEN_WIDTH  = 800;
 };
 
 function onSocketConnected() {
@@ -156,7 +169,7 @@ function onNewPlayer(data) {
 
 function onBullet(data) {
 	var bulletCircle = new bullet(scene, data.id, data.x, data.y, data.a,
-		data.v / 1.5, data.t);
+		data.v, data.t);
 
 	bullets.push(bulletCircle);
 	bulletCount++;
@@ -237,12 +250,14 @@ function playerById(id) {
 var animate = function() {
 
 	// Start update at 60 fps.
-	setTimeout(function(){
-		requestAnimationFrame(animate);
-	}, 1000 / 60);
+	requestAnimationFrame(animate);
+
+	stats.begin();
 
 	update();
 	render();
+
+	stats.end();
 };
 
 /**

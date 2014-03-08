@@ -75,7 +75,7 @@ function init(options) {
 
 	// Ticking.
 	tickTime 		= 0;
-	tickRate 		= Math.floor(1000 / (options.tickRate || 30));
+	tickRate 		= Math.floor(1000 / (options.tickRate || 60));
 	tickCount 		= 0;
 	tickInterval 	= null;
 
