@@ -38,12 +38,16 @@ var player = function(scene, startX, startY) {
 
 	var setX = function(newX) {
 	    x = newX;
-	    model.position.x = newX;
+	    if (model) {
+			model.position.x = newX;
+	    }
 	};
 
 	var setY = function(newY) {
 	    y = newY;
-	    model.position.y = newY;
+	    if (model) {
+			model.position.y = newY;
+	    }
 	};
 
 	var setAngle = function(newAngle) {
