@@ -58,6 +58,9 @@ var init = function() {
 	// Creating main scene.
 	scene = new THREE.Scene();
 
+	// Create background.
+	initBackground("images/background.jpg");
+
 	// Initialise keyboard controls.
 	keyboard = new THREEx.KeyboardState();
 
@@ -113,7 +116,7 @@ function finishedSoundLoading(bufferList) {
 	gameoverSound = bufferList[1];
 	engineSound = bufferList[0];
 	beamSound = bufferList[3];
-}
+};
 
 function playSound(buffer, time, loop) {
 	var source = audioContext.createBufferSource();
@@ -121,7 +124,17 @@ function playSound(buffer, time, loop) {
 	source.loop = loop || false;
 	source.connect(audioContext.destination);
 	source.start(time);
-}
+};
+
+function initBackground(backgroundName) {
+	var backgroundTexture = new THREE.ImageUtils.loadTexture(backgroundName);
+	var planeGeometry = new THREE.PlaneGeometry(800, 600, 0);
+	var planeMaterial = new THREE.MeshBasicMaterial({map: backgroundTexture});
+	var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+	plane.position.x = 400;
+	plane.position.y = 300;
+	scene.add(plane);
+};
 
 /**
  *	Game event handler.

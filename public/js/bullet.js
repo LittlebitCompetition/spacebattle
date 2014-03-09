@@ -15,6 +15,7 @@ var bullet = function(scene, newId, newX, newY, newAngle, newVelocity, alive) {
 		var segments = 32;
 		var circleGeometry = new THREE.CircleGeometry(radius, segments);
 		var circle = new THREE.Mesh(circleGeometry, green);
+		circle.position.z = 1;
 
 		scene.add(circle);
 
