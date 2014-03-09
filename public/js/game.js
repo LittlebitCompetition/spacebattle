@@ -61,6 +61,9 @@ var init = function() {
 	// Create background.
 	initBackground("images/background.jpg");
 
+	// Initialize lighting.
+	initLights();
+
 	// Initialise keyboard controls.
 	keyboard = new THREEx.KeyboardState();
 
@@ -135,6 +138,26 @@ function initBackground(backgroundName) {
 	plane.position.x = SCREEN_WIDTH / 2;
 	plane.position.y = SCREEN_HEIGHT / 2;
 	scene.add(plane);
+};
+
+function initLights() {
+	scene.add( new THREE.AmbientLight(0x000000));
+
+	light1 = new THREE.PointLight(0xff0040, 2, 0);
+	light1.position.set(50, 50, 50);
+	scene.add(light1);
+
+	light2 = new THREE.PointLight(0x0040ff, 2, 0);
+	light1.position.set(150, 150, 50);
+	scene.add(light2);
+
+	light3 = new THREE.PointLight(0x80ff80, 2, 0);
+	light1.position.set(50, 250, 50);
+	scene.add(light3);
+
+	light4 = new THREE.PointLight(0xffaa00, 6, 0);
+	light1.position.set(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, 1000);
+	scene.add(light4);
 };
 
 /**
