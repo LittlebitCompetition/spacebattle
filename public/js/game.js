@@ -65,7 +65,8 @@ var init = function() {
 	keyboard = new THREEx.KeyboardState();
 
 	// Set players.
-	localPlayer = new player(scene, 200, 200);	
+	localPlayer = new player(scene, Math.random() * SCREEN_WIDTH,
+		Math.random() * SCREEN_HEIGHT);
 
 	remotePlayers = [];
 	bullets = [];
@@ -128,11 +129,11 @@ function playSound(buffer, time, loop) {
 
 function initBackground(backgroundName) {
 	var backgroundTexture = new THREE.ImageUtils.loadTexture(backgroundName);
-	var planeGeometry = new THREE.PlaneGeometry(800, 600, 0);
+	var planeGeometry = new THREE.PlaneGeometry(SCREEN_WIDTH, SCREEN_HEIGHT, 0);
 	var planeMaterial = new THREE.MeshBasicMaterial({map: backgroundTexture});
 	var plane = new THREE.Mesh(planeGeometry, planeMaterial);
-	plane.position.x = 400;
-	plane.position.y = 300;
+	plane.position.x = SCREEN_WIDTH / 2;
+	plane.position.y = SCREEN_HEIGHT / 2;
 	scene.add(plane);
 };
 
