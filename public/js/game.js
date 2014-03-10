@@ -23,7 +23,9 @@ var hitCount,
 var SCREEN_WIDTH,	// We use this to hold client window size.
 	SCREEN_HEIGHT;	// 
 
-var stats;
+var stats;			// Fps stats.
+
+var text3D;			// Game text.
 
 /**
  *	Game initialisation.
@@ -160,6 +162,35 @@ function initLights() {
 	scene.add(light4);
 };
 
+function showText(text) {
+	var textGeometry = new THREE.TextGeometry(text, {
+		size: 80, 
+		height: 20, 
+		curveSegments: 10, 
+		font: "helvetiker"
+	});
+
+	textGeometry.computeBoundingBox();
+	var centerOffset = -0.5 * (textGeometry.boundingBox.max.x 
+		- textGeometry.boundingBox.min.x);
+
+	var textMaterial = new THREE.MeshBasicMaterial({color: 0x00ff00, 
+		overdraw: true });
+	text3D = new THREE.Mesh(textGeometry, textMaterial);
+
+	text3D.position.x = SCREEN_WIDTH / 2 + centerOffset;
+	text3D.position.y = SCREEN_HEIGHT / 2;
+	text3D.position.z = 500;
+
+	scene.add(text3D);
+};
+
+function removeText() {
+	if (text3D) {
+		scene.remove(text3D);	
+	}	
+};
+
 /**
  *	Game event handler.
  */
@@ -265,6 +296,7 @@ function onRemovePlayer(data) {
 
 function onKillPlayer(data) {
 	if (data.id == localPlayer.id) {
+		showText("Game Over");
 		playSound(gameoverSound, 0);
 	}
 
