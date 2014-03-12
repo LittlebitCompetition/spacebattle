@@ -1,6 +1,9 @@
 var io = require('socket.io').listen(8480);
 var fs = require('fs');
-var ramfs='/mnt/ram';
+
+// Получаем переменную ramfs от BASH-сервера
+var args = process.argv.slice(2);
+var ramfs=args[0];
 
 var sock;
 io.set('log level', 1);
@@ -9,7 +12,6 @@ io.sockets.on('connection', sock_conn);
 function sock_conn(socket){
 	sock=socket;
 	socket.on('message', function (data) {
-//		console.log(data);
 		fs.writeFileSync(ramfs+'/main_in.io', data);
 	});
 
@@ -36,7 +38,6 @@ function read_io(){
 
 	var stats = fs.fstatSync(file);
 	if(stats.size<readbytes+1) {
-//		console.log('skip');
 		setTimeout(read_io, 5);
 	}
 	else {

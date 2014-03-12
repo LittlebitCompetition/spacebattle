@@ -1,9 +1,12 @@
+
 var canvas = document.getElementById("canvas");
 var c = canvas.getContext("2d");
 var H=0; var W=0;
 var tick=0;
 
+var url=document.location.href.split('?');
 var server='127.0.0.1:8480';
+if(url[1]){server = url[1];}
 var socket='';
 
 var js = document.createElement("script");
@@ -77,6 +80,7 @@ function draw(){
 	c.fillStyle = "#000";
 	c.fillText('fps: '+fps, 10,H-10 );
 	c.fillText('x:'+io_x+'; y:'+io_y, 10, H-25);
+	c.fillText('server: '+server, 10, H-40);
 
 
 	++tick;
