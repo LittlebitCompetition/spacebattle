@@ -1,0 +1,935 @@
+<style>
+body {
+  background: #222;
+  height: 100%;
+  font-family: monospace, Helvetica, Arial, sans-serif;
+  line-height: 1.3;
+  color: #ddd;
+  min-width: 900px;
+}
+
+#viewport {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #444;
+}
+
+#ui {
+	color: #0f0;
+}
+
+</style>
+<script>var __links = document.querySelectorAll('a');function __linkClick(e) { parent.window.postMessage(this.href, '*');} ;for (var i = 0, l = __links.length; i < l; i++) {if ( __links[i].getAttribute('data-t') == '_blank' ) { __links[i].addEventListener('click', __linkClick, false);}}</script>
+<script>
+(function (root, factory) {
+    if (typeof exports === 'object') {
+        // Node. 
+        module.exports = factory();
+    } else if (typeof define === 'function' && define.amd) {
+        // AMD. Register as an anonymous module.
+        define(factory);
+    } else {
+        // Browser globals (root is window)
+        root.ASMHelpers = factory();
+    }
+}(this, function () {
+    'use strict';
+
+    var ASMHelpers = {};
+
+    ASMHelpers.Types = {
+        
+        'bool'   : { // uint8
+            size: Uint8Array.BYTES_PER_ELEMENT,
+            pow: Math.ceil(Math.log(Uint8Array.BYTES_PER_ELEMENT)/Math.LN2),
+            view: Uint8Array
+        },
+        'uint8'  : {
+            size: Uint8Array.BYTES_PER_ELEMENT,
+            pow: Math.ceil(Math.log(Uint8Array.BYTES_PER_ELEMENT)/Math.LN2),
+            view: Uint8Array
+        },
+        'int8'   : {
+            size: Int8Array.BYTES_PER_ELEMENT,
+            pow: Math.ceil(Math.log(Int8Array.BYTES_PER_ELEMENT)/Math.LN2),
+            view: Int8Array
+        },
+        'uint16' : {
+            size: Int16Array.BYTES_PER_ELEMENT,
+            pow: Math.ceil(Math.log(Int16Array.BYTES_PER_ELEMENT)/Math.LN2),
+            view: Int16Array
+        },
+        'int16'  : {
+            size: Int16Array.BYTES_PER_ELEMENT,
+            pow: Math.ceil(Math.log(Int16Array.BYTES_PER_ELEMENT)/Math.LN2),
+            view: Int16Array
+        },
+        'uint32' : {
+            size: Int32Array.BYTES_PER_ELEMENT,
+            pow: Math.ceil(Math.log(Int32Array.BYTES_PER_ELEMENT)/Math.LN2),
+            view: Int32Array
+        },
+        'uint'   : { // uint32
+            size: Uint32Array.BYTES_PER_ELEMENT,
+            pow: Math.ceil(Math.log(Uint32Array.BYTES_PER_ELEMENT)/Math.LN2),
+            view: Uint32Array
+        },
+        'int32'  : {
+            size: Int32Array.BYTES_PER_ELEMENT,
+            pow: Math.ceil(Math.log(Int32Array.BYTES_PER_ELEMENT)/Math.LN2),
+            view: Int32Array
+        },
+        'int'    : { // int32
+            size: Int32Array.BYTES_PER_ELEMENT,
+            pow: Math.ceil(Math.log(Int32Array.BYTES_PER_ELEMENT)/Math.LN2),
+            view: Int32Array
+        },
+        'float32': {
+            size: Float32Array.BYTES_PER_ELEMENT,
+            pow: Math.ceil(Math.log(Float32Array.BYTES_PER_ELEMENT)/Math.LN2),
+            view: Float32Array
+        },
+        'float'  : { // float32
+            size: Float32Array.BYTES_PER_ELEMENT,
+            pow: Math.ceil(Math.log(Float32Array.BYTES_PER_ELEMENT)/Math.LN2),
+            view: Float32Array
+        },
+        'float64': {
+            size: Float64Array.BYTES_PER_ELEMENT,
+            pow: Math.ceil(Math.log(Float64Array.BYTES_PER_ELEMENT)/Math.LN2),
+            view: Float64Array
+        },
+        'double' : { // float64
+            size: Float64Array.BYTES_PER_ELEMENT,
+            pow: Math.ceil(Math.log(Float64Array.BYTES_PER_ELEMENT)/Math.LN2),
+            view: Float64Array
+        },
+    };
+
+
+    var Struct = function Struct( data, ptr, schema, buffer ){
+
+        var key
+            ,props
+            ;
+
+        this.setPtr( ptr );
+        this.buffer = buffer;
+
+        // setup getters/setters
+        for (key in schema){
+
+            props = schema[ key ];
+            this.addProp( key, props.ptr, props.type );
+        }
+
+        // set data
+        for (key in data){
+
+            this[ key ] = data[ key ];
+        }
+    };
+
+    Struct.prototype = {
+
+        setPtr: function( ptr ){
+
+            this.ptr = ptr;
+        },
+
+        getPtr: function(){
+
+            return this.ptr;
+        },
+
+        addProp: function( name, ptr, type ){
+
+            var self = this
+                ,typeProps = ASMHelpers.Types[ type ]
+                ,viewInst = new typeProps.view( self.buffer )
+                ,pow = typeProps.pow
+                ;
+
+            self.__defineGetter__(name, function(){
+                return viewInst[ (self.ptr + ptr) >> pow ];
+            });
+
+            self.__defineSetter__(name, function( val ){
+                return viewInst[ (self.ptr + ptr) >> pow ] = val;
+            });
+        }
+    };
+      
+    var Collection = function Collection( schema, options ){
+
+        if (!(this instanceof Collection)){
+
+            return new Collection( schema, options );
+        }
+
+        options = options || {};
+        
+        var key
+            ,type
+            ,size
+            ,objSize = 0
+            ,tmp
+            ,idx
+            ,bufferSize
+            ,largest = 0
+            ,sc = {}
+            ,table = [ {},{},{},{} ] // four hashes to guide the order of memory allocation
+            ,maxObjects = options.maxObjects || 1000
+            ;
+        
+        for (key in schema){
+
+            type = schema[ key ];
+            
+            if (typeof type === 'string'){
+                
+                type = type.toLowerCase();
+                tmp = ASMHelpers.Types[ type ];
+                size = tmp.size;
+
+                if (!size){
+                    throw 'Type ' + type + ' not supported.';
+                }
+
+                // assemble total object size
+                objSize += size;
+                largest = ( size > largest ) ? size : largest;
+
+                idx = tmp.pow;
+                table[ idx ][ key ] = type;
+            }
+        }
+
+        // round up to the nearest multiple of the largest object size
+        objSize = Math.ceil(objSize / largest) * largest;
+
+        this.objSize = objSize;
+        this.blockSize = largest;
+        // need the largest power of 2 greater than required size
+        bufferSize = 1 << Math.ceil(Math.log(objSize * maxObjects)/Math.LN2);
+        this.buffer = new ArrayBuffer( bufferSize );
+        tmp = 0;
+
+        for ( var i = table.length - 1; i >= 0; i-- ){
+            
+            for (key in table[ i ]){
+
+                !function(key, type, ptr){
+
+                    var params = ASMHelpers.Types[ type ];
+
+                    sc[ key ] = {
+                        ptr: ptr,
+                        pow: params.pow,
+                        size: params.size,
+                        type: type
+                    };
+
+                    tmp += params.size;
+                }(key, table[ i ][ key ], tmp);
+            }
+        }
+
+        this._schema = sc;
+        this.objs = [];
+    };
+
+    Collection.prototype = {
+        /**
+         * Add a member
+         * @param {Object} obj Values to set for the object
+         */
+        add: function( obj ){
+
+            var ptr = this.objSize * this.objs.length
+                ,inst = new Struct( obj, ptr, this._schema, this.buffer )
+                ;
+
+            this.objs.push( inst );
+        },
+        /**
+         * Remove one or more members
+         * @param  {Number} idx Start index
+         * @param  {Number} count (optional) Number of objects to remove beginning at idx
+         * @return {void}
+         */
+        remove: function( idx, count ){
+
+            idx = idx|0;
+            count = count|0 || 1;
+
+            if (idx > this.objs.length){
+                return;
+            }
+
+            // start the view at the selected index
+            var objs = this.objs
+                ,obj
+                ,size = this.objSize
+                ,view = new Int8Array( this.buffer, idx * size )
+                ;
+
+            // sub array at one object later
+            // set the current view to the sub array minus that "first" object
+            view.set( view.subarray( count * size ) );
+            // repoint objects
+            for ( var i = idx + count, l = objs.length; i < l; ++i ){
+                
+                obj = objs[ i ];
+                obj.setPtr( obj.getPtr() - count * size );
+            }
+            // remove the struct
+            objs.splice( idx, count );
+        },
+        /**
+         * Get number of members
+         * @return {Number}
+         */
+        count: function(){
+
+            return this.objs.length;
+        },
+        /**
+         * Remove all members
+         * @return {void}
+         */
+        clear: function(){
+
+            delete this.objs;
+            this.objs = [];
+        },
+        /**
+         * Execute a function for each member
+         * @param  {Function} fn
+         * @return {void}
+         */
+        each: function( fn ){
+
+            var objs = this.objs;
+
+            for ( var i = 0, l = objs.length; i < l; ++i ){
+                
+                fn( objs[ i ], i );
+            }
+        },
+        /**
+         * Include an ASM Module
+         * @param  {Function} fn ASM module factory
+         * @return {void}
+         */
+        include: function( fn ){
+
+            var self = this
+                ,stdlib = { 
+                    Uint8Array: Uint8Array,
+                    Int8Array: Int8Array,
+                    Uint16Array: Uint16Array,
+                    Int16Array: Int16Array,
+                    Uint32Array: Uint32Array,
+                    Int32Array: Int32Array,
+                    Float32Array: Float32Array,
+                    Float64Array: Float64Array,
+                    Math: Math 
+                }
+                ,coln = {
+                    getLen: function(){
+                        return self.objs.length;
+                    },
+                    ptr: self.ptr,
+                    objSize: self.objSize
+                }
+                ,mixin
+                ,key
+                ;
+
+            for ( key in self._schema ){
+
+                coln[ '$'+key ] = self._schema[ key ].ptr;
+            }
+
+            mixin = fn( stdlib, coln, self.buffer );
+
+            for ( key in mixin ){
+
+                self[ key ] = mixin[ key ];
+            }
+        }
+    };
+
+    ASMHelpers.Collection = Collection;
+
+    return ASMHelpers;
+
+}));
+
+</script>
+
+  <label>
+    <select id="objcount">
+      <option>50</option>
+      <option>100</option>
+      <option>200</option>
+      <option>300</option>
+      <option selected="selected">400</option>
+      <option>500</option>
+      <option>600</option>
+      <option>1000</option>
+    </select>
+  </label>
+"c"-clear;"a"-add;"r"-remove;"m"-mini;"h"-hi
+<span id="ui"></span>
+<center><canvas id="viewport"></canvas></center>
+
+
+<script>
+// http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+// http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
+ 
+// requestAnimationFrame polyfill by Erik Moller
+// fixes from Paul Irish and Tino Zijdel
+
+//Original script at http://wellcaffeinated.net/demos/asm-js-physics.html
+//Modify by EuPhobos
+
+ 
+(function(window) {
+    var lastTime = 0;
+    var vendors = ['ms', 'moz', 'webkit', 'o'];
+    for(var x= 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+        window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame'] || window[vendors[x]+'CancelRequestAnimationFrame'];
+    }
+ 
+    if (!window.requestAnimationFrame){
+        window.requestAnimationFrame = function(callback, element) {
+            var currTime = new Date().getTime();
+            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+            var id = window.setTimeout(function() { callback(currTime + timeToCall); }, 
+              timeToCall);
+            lastTime = currTime + timeToCall;
+            return id;
+        };
+    }
+ 
+    if (!window.cancelAnimationFrame){
+        window.cancelAnimationFrame = function(id) {
+            clearTimeout(id);
+        };
+    }
+}(this));
+
+!function(){
+
+    var bodies = new ASMHelpers.Collection({
+        'x'    : 'double',
+        'y'    : 'double',
+        // previous position values encode velocity for verlet integration
+        'px'    : 'double', // previous x
+        'py'    : 'double', // previous y
+        'ax'   : 'double',
+        'ay'   : 'double',
+        'cx'   : 'double',
+        'cy'   : 'double'
+    });
+
+    // bulk of the physics engine
+    bodies.include(function(stdlib, coln, heap){
+        "use asm";
+
+        var sqrt = stdlib.Math.sqrt;
+        // set up our view to look into the heap
+        var float64 = new stdlib.Float64Array( heap );
+
+        // x parameters
+        var $x = coln.$x|0;
+        var $px = coln.$px|0;
+        var $ax = coln.$ax|0;
+
+        // y parameters
+        var $y = coln.$y|0;
+        var $py = coln.$py|0;
+        var $ay = coln.$ay|0;
+
+		var $cx = coln.$cx|0;
+		var $cy = coln.$cy|0;
+
+        // will get the number of objects in the collection
+        var getLen = coln.getLen;
+        // the size of each object in bytes
+        var size = coln.objSize|0;
+        // starting point for iteration
+        var iterator = coln.ptr|0;
+
+        // static properties for newtonian gravity
+        var newton_stren = 0.1;
+        var newton_tol = 50.0;
+
+        // math helpers
+
+        function max( p, q ){
+            p = +p;
+            q = +q;
+
+            return +((p > q) ? p : q);
+        }
+
+        function min( p, q ){
+            p = +p;
+            q = +q;
+
+            return +((p < q) ? p : q);
+        }
+
+        // integrate by one timestep
+        function integrate( dt ){
+            dt = dt|0;
+
+            var i = 0, l = 0, ptr = 0;
+            ptr = iterator|0;
+            l = getLen()|0;
+
+            // loop through objects and execute integrateOne on them
+            while ((i|0) < (l|0)){
+                integrateOne( ptr, dt );
+                i = ((i|0) + 1)|0;
+                ptr = ((ptr|0) + (size|0))|0;
+            }
+        }
+
+        // integrate one object ($obj pointer) by timestep dt
+        function integrateOne( $obj, dt ){
+            $obj = $obj|0;
+            dt = dt|0;
+
+            var x = 0.0,
+                y = 0.0,
+                px = 0.0,
+                py = 0.0,
+                vx = 0.0,
+                vy = 0.0,
+                ax = 0.0,
+                ay = 0.0,
+				cx = 0.0,
+				cy = 0.0,
+                dtSq = 0.0;
+
+            // dt * dt
+            dtSq = +(+(dt|0) * +(dt|0));
+
+            // get the values for the object from memory
+            // 3 is because we're dealing with float64
+            // (# bytes) >> 3 --> 64 bit array index
+            x = +float64[($obj + $x) >> 3];
+            px = +float64[($obj + $px) >> 3];
+            ax = +float64[($obj + $ax) >> 3];
+
+            y = +float64[($obj + $y) >> 3];
+            py = +float64[($obj + $py) >> 3];
+            ay = +float64[($obj + $ay) >> 3];
+
+            // (velocity) = (position) - (previous position)
+            vx = +x - +px;
+            vy = +y - +py;
+
+            // store old positions
+            float64[($obj + $px) >> 3] = +x;
+            float64[($obj + $py) >> 3] = +y;
+
+            // apply acceleration and inertia
+            // x = x + (v) + (a * dt * dt)
+
+            x = +(+x + +vx);
+            y = +(+y + +vy);
+
+            x = +(+x + +ax * +dtSq);
+            y = +(+y + +ay * +dtSq);
+
+            float64[($obj + $x) >> 3] = +x;
+            float64[($obj + $y) >> 3] = +y;
+
+            // set accelerations to body
+            float64[($obj + $cx) >> 3] = float64[($obj + $ax) >> 3];
+            float64[($obj + $cy) >> 3] = float64[($obj + $ay) >> 3];
+
+            // set accelerations to zero
+            float64[($obj + $ax) >> 3] = 0.0;
+            float64[($obj + $ay) >> 3] = 0.0;
+        }
+
+        function newtonianBetween( $obj1, $obj2 ){
+
+            $obj1 = $obj1|0;
+            $obj2 = $obj2|0;
+
+            var dx = 0.0, dy = 0.0, n = 0.0;
+
+            // difference between positions
+            dx = +float64[($obj1 + $x) >> 3] - +float64[($obj2 + $x) >> 3];
+            dy = +float64[($obj1 + $y) >> 3] - +float64[($obj2 + $y) >> 3];
+
+            // norm squared
+            n = (+dx) * (+dx) + (+dy) * (+dy);
+
+            if ( n > newton_tol ){
+
+                n = (+newton_stren) / (+n) / +sqrt(n);
+
+                // multiply by strength of gravity
+                dx = (+dx) * (+n);
+                dy = (+dy) * (+n);
+
+                applyAccelerationObj( $obj2, dx, dy );
+
+                // reverse
+                dx = -(+dx);
+                dy = -(+dy);
+                applyAccelerationObj( $obj1, dx, dy );
+            }
+        }
+
+        // double iteration and apply newtonian gravity between all objects
+        function newtonianGravity(){
+
+            var i = 0, l = 0, ptr = 0;
+            var ii = 0, ptrptr = 0;
+            ptr = iterator|0;
+            l = getLen()|0;
+
+            while ((i|0) < (l|0)){
+
+                ii = ((i|0) + 1)|0;
+                ptrptr = ((ptr|0) + (size|0))|0;
+
+                while ((ii|0) < (l|0)){
+
+                    newtonianBetween( ptr, ptrptr );
+
+                    ii = ((ii|0) + 1)|0;
+                    ptrptr = ((ptrptr|0) + (size|0))|0;
+                }
+
+                i = ((i|0) + 1)|0;
+                ptr = ((ptr|0) + (size|0))|0;
+            }
+        }
+
+        function applyAccelerationObj( $obj, ax, ay ){
+
+            $obj = $obj|0;
+            ax = +ax;
+            ay = +ay;
+
+            float64[($obj + $ax) >> 3] = +float64[($obj + $ax) >> 3] + +ax;
+            float64[($obj + $ay) >> 3] = +float64[($obj + $ay) >> 3] + +ay;
+        }
+/*
+        function applyAcceleration( ax, ay ){
+            ax = +ax;
+            ay = +ay;
+
+            var i = 0, l = 0, ptr = 0;
+            ptr = iterator|0;
+            l = getLen()|0;
+
+            // loop through objects
+            while ((i|0) < (l|0)){
+                
+                // add acceleration to every body
+                applyAccelerationObj( ptr, ax, ay );
+
+                i = ((i|0) + 1)|0;
+                ptr = ((ptr|0) + (size|0))|0;
+            }
+        }
+*/
+        // we'll constrain the particles to a 600x600 box
+        function applyConstraints(){
+
+            var i = 0, l = 0, ptr = 0;
+            ptr = iterator|0;
+            l = getLen()|0;
+
+            // loop through objects
+            while ((i|0) < (l|0)){
+
+
+//				var _x,_y;
+//				_x = float64[(ptr + $x) >> 3];
+//				_y = float64[(ptr + $y) >> 3];
+//				_x = +max(0.0, +_x);
+//				_y = +max(0.0, +_y);
+//				_x = +min(W, +_x);
+//				_y = +min(H, +_y);
+//				if ( _x > W ) _x = 0;
+//				if ( _x < 0 ) _x = W;
+//				if ( _y > H ) _y = 0;
+//				if ( _y < 0 ) _y = H;
+//				float64[(ptr + $x) >> 3] = _x;
+//				float64[(ptr + $y) >> 3] = _y;
+
+
+                float64[(ptr + $x) >> 3] = +max(0.0, +float64[(ptr + $x) >> 3]);
+                float64[(ptr + $y) >> 3] = +max(0.0, +float64[(ptr + $y) >> 3]);
+                float64[(ptr + $x) >> 3] = +min(W, +float64[(ptr + $x) >> 3]);
+                float64[(ptr + $y) >> 3] = +min(H, +float64[(ptr + $y) >> 3]);
+
+
+                i = ((i|0) + 1)|0;
+                ptr = ((ptr|0) + (size|0))|0;
+            }
+        }
+
+        return {
+            integrate: integrate,
+            newtonianGravity: newtonianGravity,
+//            applyAcceleration: applyAcceleration,
+            applyConstraints: applyConstraints
+        };
+    });
+
+    // for getting prefixed style attribute names
+    var thePrefix = {}
+        ,tmpdiv = document.createElement("div")
+        ,toTitleCase = function toTitleCase(str) {
+            return str.replace(/(?:^|\s)\w/g, function(match) {
+                return match.toUpperCase();
+            });
+        }
+        ,pfx = function pfx(prop) {
+
+            if (thePrefix[prop]){
+                return thePrefix[prop];
+            }
+
+            var arrayOfPrefixes = ['Webkit', 'Moz', 'Ms', 'O']
+                ,name
+                ;
+
+            for (var i = 0, l = arrayOfPrefixes.length; i < l; ++i) {
+
+                name = arrayOfPrefixes[i] + toTitleCase(prop);
+
+                if (name in tmpdiv.style){
+                    return thePrefix[prop] = name;
+                }
+            }
+
+            if (name in tmpdiv.style){
+                return thePrefix[prop] = prop;
+            }
+
+            return false;
+        }
+        ;
+
+    var time = 0
+        ,viewport = document.getElementById('viewport')
+        ,ctx = viewport.getContext('2d')
+        ,cssTransform = pfx('transform')
+        ,Pi2 = Math.PI * 2
+        ,running = false
+        ,objselect = document.getElementById('objcount')
+        ;
+
+	var W,H;
+
+    H = window.innerHeight - 60;
+    W = window.innerWidth - 40;
+    
+    ctx.canvas.width  = W;
+    ctx.canvas.height = H;
+
+    objselect.onchange = function(){
+
+        var count = objselect.value|0;
+
+        if ( count > bodies.count() ){
+        
+            bodies.clear();
+            init( count );
+
+        } else {
+
+            bodies.remove(count, bodies.count() - count);
+        }
+    };
+
+	function setSize(w,h){
+		if ( typeof h === "undefined" ) H = window.innerHeight - 60;
+		else H = h;
+		if ( typeof h === "undefined" ) W = window.innerWidth - 40;
+		else W = w;
+
+		ctx.canvas.width  = W;
+		ctx.canvas.height = H;
+
+	}
+	window.onresize = setSize;
+
+
+
+    function init( count ){
+    
+        var x, y;
+
+        for ( var i = 0, l = count; i < l; ++i ){
+            
+            x = Math.random() * W;
+            y = Math.random() * H;
+
+            bodies.add({
+                x: x,
+                y: y,
+                px: x - (y - H/2)/10000,
+                py: y + (x - W/2)/10000
+            });
+        }
+
+        if (!running){
+            running = true;
+            step();
+        }
+    }
+
+    function renderBody( body ){
+
+        ctx.beginPath();
+        ctx.arc(body.x, body.y, 2, 0, Pi2, false);
+        ctx.closePath();
+//        ctx.strokeStyle = "#000";
+//        ctx.stroke();
+		var _col = "#000";
+		var cx = body.cx;
+		var cy = body.cy;
+
+		if ( cx < 0 ) cx = cx * -1;
+		if ( cy < 0 ) cy = cy * -1;
+
+		var _vel = cx+cy;
+		_vel = _vel * 10000;
+
+		_vel = Math.round(_vel);
+
+		var _svel = 0;
+		var _tvel = 0;
+
+		if ( _vel  > 15 ) { _svel = _vel  - 15; _vel  = 15; }
+		if ( _svel > 15 ) { _tvel = _svel - 15; _svel = 15; }
+		if ( _tvel > 15 ) _tvel = 15;
+
+		_col = "#"+Number(_vel).toString(16)+Number(_svel).toString(16)+Number(_tvel).toString(16);
+
+        ctx.fillStyle = _col;
+        ctx.fill();
+
+/*
+		ctx.font = "bold 12px sans-serif";
+		ctx.textAlign = "left";
+		ctx.textBaseline = "bottom";
+		ctx.fillStyle = "red";
+		ctx.fillText('fps: '+frame+'; tps: '+tick, 10,H-10 );
+*/
+
+    }
+
+    function step(){
+
+        window.requestAnimationFrame(step);
+
+        var now = (new Date()).getTime()
+            ,diff = now - time
+            ,dt = 1000.0 / 640
+            ,maxJump = dt * 16
+            ;
+
+        if ( !diff ) return this;
+        
+        // limit number of substeps in each step
+        if ( diff > maxJump ){
+
+            time = now - maxJump;
+        }
+
+        // break every rendering step into substeps for integration
+        while ( time < now ){
+            time += dt;
+            bodies.newtonianGravity();
+            bodies.integrate( dt );
+            bodies.applyConstraints();
+			++tick;
+        }
+        
+        // render all the bodies
+        viewport.width = viewport.width;
+        bodies.each(renderBody);
+		++frame;
+    }
+
+	var keys=[];
+	window.addEventListener("keydown", function (e) {
+		keys[e.keyCode] = true;
+
+		if ( e.keyCode == '77' ) setSize (800, 600);
+		if ( e.keyCode == '72' ) setSize ();
+		if ( e.keyCode == '65' ) more (10);
+		if ( e.keyCode == '67' ) bodies.clear();
+		if ( e.keyCode == '82' ) bodies.remove(0,5);
+//		if ( e.keyCode == '82' ) sh.f = 300;
+		_key = e.keyCode;
+	});
+	window.addEventListener("keyup", function (e) {
+		keys[e.keyCode] = false;
+	});
+
+
+
+	function getMousePos(viewport, evt) {
+		var rect = viewport.getBoundingClientRect();
+		return {
+			x: evt.clientX - rect.left,
+			y: evt.clientY - rect.top
+		};
+	}
+	var mousePos;
+	viewport.addEventListener('mousemove', function(evt) {
+		mousePos = getMousePos(viewport, evt);
+	}, false);
+
+	function more(count){
+        var x, y;
+
+        for ( var i = 0, l = count; i < l; ++i ){
+            
+            x = Math.random() * 30 + mousePos.x;
+            y = Math.random() * 30 + mousePos.y;
+
+            bodies.add({
+                x: x,
+                y: y,
+                px: x,
+                py: y
+            });
+        }
+	}
+
+	var frame=0;
+	var tick=0;
+	function getFPS(){
+		document.getElementById("ui").innerHTML="fps: "+frame*2+"; tps: "+tick*2+"; count: "+bodies.count();
+	    tick = 0;
+		frame = 0;
+	}
+	setInterval(getFPS,500);
+
+
+    // RUN IT!
+    init( objselect.value|0 );
+}();
+
+
+</script>
